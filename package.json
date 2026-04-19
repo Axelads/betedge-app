@@ -9,10 +9,31 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "expo": "~54.0.33",
-    "expo-status-bar": "~3.0.9",
-    "react": "19.1.0",
-    "react-native": "0.81.5"
+    "@expo/vector-icons": "^15.0.2",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-community/datetimepicker": "8.6.0",
+    "@react-navigation/bottom-tabs": "^7.15.9",
+    "@react-navigation/native": "^7.2.2",
+    "expo": "^55.0.14",
+    "expo-image-manipulator": "~55.0.15",
+    "expo-image-picker": "~55.0.18",
+    "expo-linear-gradient": "~55.0.13",
+    "expo-linking": "~55.0.13",
+    "expo-secure-store": "~55.0.13",
+    "expo-status-bar": "~55.0.5",
+    "expo-web-browser": "~55.0.14",
+    "nativewind": "^4.2.3",
+    "pocketbase": "^0.26.8",
+    "react": "19.2.0",
+    "react-native": "0.83.4",
+    "react-native-safe-area-context": "~5.6.2",
+    "react-native-screens": "~4.23.0",
+    "react-native-sse": "^1.2.1",
+    "react-native-svg": "15.15.3",
+    "tailwindcss": "^3.4.19"
   },
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "babel-preset-expo": "^55.0.17"
+  }
 }

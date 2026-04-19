@@ -1,0 +1,44 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "simulator": false
+      },
+      "env": {
+        "EXPO_PUBLIC_PB_URL": "https://unwilling-camella-axelads-f3f3ad2e.koyeb.app",
+        "EXPO_PUBLIC_TELEGRAM_BOT_TOKEN": "8644198219:AAEBQ4Dy7Cmlb9z3mBLQsPvUaXyxCgmONDQ"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "ios": {
+        "credentialsSource": "remote"
+      },
+      "env": {
+        "EXPO_PUBLIC_PB_URL": "https://unwilling-camella-axelads-f3f3ad2e.koyeb.app",
+        "EXPO_PUBLIC_TELEGRAM_BOT_TOKEN": "8644198219:AAEBQ4Dy7Cmlb9z3mBLQsPvUaXyxCgmONDQ"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "k_sual@hotmail.fr",
+        "ascAppId": "6762222990",
+        "appleTeamId": "9GHUHMUB36"
+      }
+    }
+  }
+}
