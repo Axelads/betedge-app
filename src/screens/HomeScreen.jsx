@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import {
   View, Text, ScrollView, Pressable, ActivityIndicator, Modal, TextInput, Alert
 } from 'react-native'
@@ -42,12 +42,19 @@ const calculerSerieEnCours = (paris) => {
   return { nb, type: premierStatut }
 }
 
-// Modale saisie de résultat (depuis l'accueil)
+// Modale saisie ou correction de résultat (depuis l'accueil)
 function ModaleResultat({ pari, visible, onFermer, onSauvegarde }) {
   const { c } = useTheme()
-  const [statut, setStatut] = useState('gagne')
-  const [score, setScore] = useState('')
+  const [statut, setStatut] = useState(pari?.statut !== 'en_attente' ? pari?.statut : 'gagne')
+  const [score, setScore] = useState(pari?.score_final ?? '')
   const [chargement, setChargement] = useState(false)
+
+  useEffect(() => {
+    if (pari) {
+      setStatut(pari.statut !== 'en_attente' ? pari.statut : 'gagne')
+      setScore(pari.score_final ?? '')
+    }
+  }, [pari])
 
   const handleSauvegarder = async () => {
     setChargement(true)
@@ -67,7 +74,7 @@ function ModaleResultat({ pari, visible, onFermer, onSauvegarde }) {
       <View style={{ flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' }}>
         <View style={{ backgroundColor: c.fondModal, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
           <Text style={{ fontSize: 18, fontWeight: 'bold', color: c.texte, marginBottom: 4 }}>
-            Entrer le résultat
+            {pari?.statut === 'en_attente' ? 'Entrer le résultat' : 'Modifier le résultat'}
           </Text>
           <Text style={{ fontSize: 14, color: c.texteSecondaire, marginBottom: 16 }}>
             {pari?.rencontre}
@@ -258,12 +265,8 @@ export default function HomeScreen({ navigation }) {
   }, [])
 
   const ouvrirPari = (pari) => {
-    if (pari.statut === 'en_attente') {
-      setPariSelectionne(pari)
-      setModaleVisible(true)
-    } else {
-      navigation.navigate('Historique')
-    }
+    setPariSelectionne(pari)
+    setModaleVisible(true)
   }
 
   // Recharger à chaque fois que l'écran devient actif

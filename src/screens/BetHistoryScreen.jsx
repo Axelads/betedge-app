@@ -53,7 +53,7 @@ function ModaleResultat({ pari, visible, onFermer, onSauvegarde }) {
       <View style={{ flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' }}>
         <View style={{ backgroundColor: c.fondModal, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
           <Text style={{ fontSize: 18, fontWeight: 'bold', color: c.texte, marginBottom: 4 }}>
-            Entrer le résultat
+            {pari?.statut === 'en_attente' ? 'Entrer le résultat' : 'Modifier le résultat'}
           </Text>
           <Text style={{ fontSize: 14, color: c.texteSecondaire, marginBottom: 16 }}>
             {pari?.rencontre}
@@ -161,11 +161,25 @@ function LignePari({ pari, onResultat }) {
       </View>
       <Pressable
         onPress={() => onResultat(pari)}
-        className={`mt-3 rounded-lg py-2 items-center ${pari.statut === 'en_attente' ? 'bg-blue-600' : 'bg-gray-500'}`}
+        className="mt-3 rounded-lg py-2 items-center"
+        style={{
+          backgroundColor: pari.statut === 'en_attente' ? '#2563eb' : 'transparent',
+          borderWidth: pari.statut === 'en_attente' ? 0 : 1,
+          borderColor: c.bordure,
+        }}
       >
-        <Text className="text-white font-semibold text-sm">
-          {pari.statut === 'en_attente' ? 'Entrer le résultat' : 'Modifier le résultat'}
-        </Text>
+        <View className="flex-row items-center gap-1">
+          {pari.statut !== 'en_attente' && (
+            <Ionicons name="create-outline" size={13} color={c.texteSecondaire} />
+          )}
+          <Text style={{
+            fontSize: 13,
+            fontWeight: '600',
+            color: pari.statut === 'en_attente' ? '#ffffff' : c.texteSecondaire,
+          }}>
+            {pari.statut === 'en_attente' ? 'Entrer le résultat' : 'Modifier le résultat'}
+          </Text>
+        </View>
       </Pressable>
     </View>
   )
