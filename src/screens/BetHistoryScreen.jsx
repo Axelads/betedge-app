@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   View, Text, FlatList, Pressable, Modal, TextInput, Alert, ActivityIndicator
 } from 'react-native'
@@ -24,9 +24,16 @@ const LABEL_SPORT = {
 
 function ModaleResultat({ pari, visible, onFermer, onSauvegarde }) {
   const { c } = useTheme()
-  const [statut, setStatut] = useState('gagne')
-  const [score, setScore] = useState('')
+  const [statut, setStatut] = useState(pari?.statut !== 'en_attente' ? pari?.statut : 'gagne')
+  const [score, setScore] = useState(pari?.score_final ?? '')
   const [chargement, setChargement] = useState(false)
+
+  useEffect(() => {
+    if (pari) {
+      setStatut(pari.statut !== 'en_attente' ? pari.statut : 'gagne')
+      setScore(pari.score_final ?? '')
+    }
+  }, [pari])
 
   const handleSauvegarder = async () => {
     setChargement(true)
@@ -152,25 +159,25 @@ function LignePari({ pari, onResultat }) {
           </Text>
         )}
       </View>
-      {pari.statut === 'en_attente' && (
-        <Pressable
-          onPress={() => onResultat(pari)}
-          className="mt-3 bg-blue-600 rounded-lg py-2 items-center"
-        >
-          <Text className="text-white font-semibold text-sm">Entrer le résultat</Text>
-        </Pressable>
-      )}
+      <Pressable
+        onPress={() => onResultat(pari)}
+        className={`mt-3 rounded-lg py-2 items-center ${pari.statut === 'en_attente' ? 'bg-blue-600' : 'bg-gray-500'}`}
+      >
+        <Text className="text-white font-semibold text-sm">
+          {pari.statut === 'en_attente' ? 'Entrer le résultat' : 'Modifier le résultat'}
+        </Text>
+      </Pressable>
     </View>
   )
 }
 
-export default function HistoriqueParis() {
+export default function HistoriqueParis({ route }) {
   const { c } = useTheme()
   const [paris, setParis] = useState([])
   const [chargement, setChargement] = useState(true)
   const [pariSelectionne, setPariSelectionne] = useState(null)
   const [modaleVisible, setModaleVisible] = useState(false)
-  const [filtre, setFiltre] = useState('tous')
+  const [filtre, setFiltre] = useState(route?.params?.filtreInitial ?? 'tous')
 
   const chargerParis = useCallback(async () => {
     setChargement(true)

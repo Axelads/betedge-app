@@ -1,9 +1,13 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useRef } from 'react'
 import {
-  View, Text, ScrollView, ActivityIndicator
+  View, Text, ScrollView, ActivityIndicator,
+  Pressable, Modal, Alert,
 } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
+import { captureRef } from 'react-native-view-shot'
+import * as Sharing from 'expo-sharing'
+import { LinearGradient } from 'expo-linear-gradient'
 import { getTousLesParis } from '../services/pocketbase'
 import {
   calculerROI,
@@ -15,6 +19,7 @@ import {
   calculerHistoriqueBankroll,
 } from '../services/stats'
 import { useTheme } from '../context/ThemeContext'
+import CarteStatsPartage from '../components/CarteStatsPartage'
 
 const LABEL_SPORT = {
   football:   '⚽ Football',
@@ -46,8 +51,10 @@ const LABEL_TYPE_PARI = {
 }
 
 const LABEL_TAG = {
-  forme_domicile_forte:    'Forme domicile forte',
-  forme_exterieur_faible:  'Forme extérieur faible',
+  forme_domicile_forte:    'Domicile fort',
+  forme_domicile_faible:   'Domicile faible',
+  forme_exterieur_forte:   'Extérieur fort',
+  forme_exterieur_faible:  'Extérieur faible',
   equipe_motivee:          'Équipe motivée',
   equipe_sans_enjeu:       'Équipe sans enjeu',
   blessures_adversaire:    'Blessures adversaire',
@@ -201,6 +208,9 @@ export default function StatsScreen() {
   const { c } = useTheme()
   const [paris, setParis] = useState([])
   const [chargement, setChargement] = useState(true)
+  const [modalePartageVisible, setModalePartageVisible] = useState(false)
+  const [enCoursCapture, setEnCoursCapture] = useState(false)
+  const carteRef = useRef(null)
 
   const chargerDonnees = useCallback(async () => {
     setChargement(true)
@@ -214,6 +224,27 @@ export default function StatsScreen() {
   }, [])
 
   useFocusEffect(chargerDonnees)
+
+  const capturerEtPartager = async () => {
+    try {
+      setEnCoursCapture(true)
+      const uri = await captureRef(carteRef, { format: 'png', quality: 1 })
+      setEnCoursCapture(false)
+      const disponible = await Sharing.isAvailableAsync()
+      if (disponible) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'image/png',
+          dialogTitle: 'Partager mes stats BetEdge',
+        })
+      } else {
+        Alert.alert('Partage indisponible', 'Le partage n\'est pas supporté sur cet appareil.')
+      }
+    } catch (e) {
+      setEnCoursCapture(false)
+      console.error('capturerEtPartager erreur:', e)
+      Alert.alert('Erreur', 'Impossible de capturer la carte.')
+    }
+  }
 
   if (chargement) {
     return (
@@ -278,10 +309,16 @@ export default function StatsScreen() {
   const coteMoyenne    = parisTermines.reduce((s, p) => s + (p.cote ?? 0), 0) / parisTermines.length
   const nbGagnes       = parisTermines.filter(p => p.statut === 'gagne').length
 
+  // Données pour la carte de partage
+  const meileurSportEntry = sportsTriés[0]
+  const meileurSport      = meileurSportEntry?.[0]
+  const roiMeileurSport   = meileurSportEntry?.[1] ?? 0
+
   return (
+    <View style={{ flex: 1, backgroundColor: c.fond }}>
     <ScrollView
-      style={{ flex: 1, backgroundColor: c.fond }}
-      contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+      style={{ flex: 1 }}
+      contentContainerStyle={{ padding: 16, paddingBottom: 96 }}
       showsVerticalScrollIndicator={false}
     >
       {/* ── Résumé en 4 cases ──────────────────────────────────────────────── */}
@@ -425,5 +462,143 @@ export default function StatsScreen() {
         </Carte>
       )}
     </ScrollView>
+
+    {/* ── Bouton flottant Partager ────────────────────────────────────────── */}
+    <Pressable
+      onPress={() => setModalePartageVisible(true)}
+      style={({ pressed }) => ({
+        position: 'absolute',
+        bottom: 24,
+        right: 20,
+        borderRadius: 28,
+        overflow: 'hidden',
+        opacity: pressed ? 0.85 : 1,
+        shadowColor: '#3b82f6',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 12,
+        elevation: 8,
+      })}
+    >
+      <LinearGradient
+        colors={['#3b82f6', '#8b5cf6']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+          paddingHorizontal: 20,
+          paddingVertical: 14,
+        }}
+      >
+        <Ionicons name="share-social-outline" size={18} color="#fff" />
+        <Text style={{ fontSize: 14, fontWeight: '700', color: '#fff' }}>Partager mes stats</Text>
+      </LinearGradient>
+    </Pressable>
+
+    {/* ── Modale de prévisualisation ─────────────────────────────────────── */}
+    <Modal
+      visible={modalePartageVisible}
+      transparent
+      animationType="slide"
+      onRequestClose={() => setModalePartageVisible(false)}
+    >
+      <View style={{
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.85)',
+        justifyContent: 'flex-end',
+      }}>
+        {/* Fond tappable pour fermer */}
+        <Pressable
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          onPress={() => setModalePartageVisible(false)}
+        />
+
+        <View style={{
+          backgroundColor: '#0c0f1e',
+          borderTopLeftRadius: 28,
+          borderTopRightRadius: 28,
+          paddingTop: 12,
+          paddingBottom: 40,
+          paddingHorizontal: 20,
+        }}>
+          {/* Handle */}
+          <View style={{
+            width: 40, height: 4, borderRadius: 2,
+            backgroundColor: '#334155',
+            alignSelf: 'center',
+            marginBottom: 20,
+          }} />
+
+          <Text style={{ fontSize: 16, fontWeight: '700', color: '#f1f5f9', marginBottom: 20, textAlign: 'center' }}>
+            Aperçu de ta carte
+          </Text>
+
+          {/* Carte centrée */}
+          <View style={{ alignItems: 'center', marginBottom: 24 }}>
+            <CarteStatsPartage
+              ref={carteRef}
+              roiGlobal={roiGlobal}
+              tauxGlobal={tauxGlobal}
+              profitTotal={profitTotal}
+              nbGagnes={nbGagnes}
+              nbTotaux={parisTermines.length}
+              coteMoyenne={coteMoyenne}
+              meileurSport={meileurSport}
+              roiMeileurSport={roiMeileurSport}
+              topTags={topTags}
+              historiqueBankroll={historiqueBankroll}
+            />
+          </View>
+
+          {/* Boutons d'action */}
+          <Pressable
+            onPress={capturerEtPartager}
+            disabled={enCoursCapture}
+            style={({ pressed }) => ({
+              borderRadius: 16,
+              overflow: 'hidden',
+              opacity: pressed || enCoursCapture ? 0.7 : 1,
+              marginBottom: 12,
+            })}
+          >
+            <LinearGradient
+              colors={['#3b82f6', '#8b5cf6']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+                paddingVertical: 16,
+              }}
+            >
+              {enCoursCapture
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <Ionicons name="share-social" size={20} color="#fff" />
+              }
+              <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>
+                {enCoursCapture ? 'Génération...' : 'Partager l\'image'}
+              </Text>
+            </LinearGradient>
+          </Pressable>
+
+          <Pressable
+            onPress={() => setModalePartageVisible(false)}
+            style={({ pressed }) => ({
+              paddingVertical: 14,
+              alignItems: 'center',
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <Text style={{ fontSize: 14, color: '#475569' }}>Fermer</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+
+    </View>
   )
 }

@@ -129,8 +129,10 @@ const FORMES_EQUIPE = [
 ]
 
 const TAGS_RAISONNEMENT = [
-  { cle: 'forme_domicile_forte',    label: 'Forme domicile forte' },
-  { cle: 'forme_exterieur_faible',  label: 'Forme ext. faible' },
+  { cle: 'forme_domicile_forte',    label: 'Domicile fort' },
+  { cle: 'forme_domicile_faible',   label: 'Domicile faible' },
+  { cle: 'forme_exterieur_forte',   label: 'Extérieur fort' },
+  { cle: 'forme_exterieur_faible',  label: 'Extérieur faible' },
   { cle: 'equipe_motivee',          label: 'Équipe motivée' },
   { cle: 'equipe_sans_enjeu',       label: 'Équipe sans enjeu' },
   { cle: 'blessures_adversaire',    label: 'Blessures adversaire' },
@@ -152,6 +154,7 @@ const ETAPE2_INIT = {
   tagsRaisonnement: [], confiance: 0, raisonnementLibre: '',
   formeEquipes: '', contexteBlessures: '',
   tagAutreActif: false, tagAutreTexte: '',
+  coteBoostee: false,
 }
 
 const FICHES = TYPES_PARI.map((t, index) => ({
@@ -351,6 +354,7 @@ export default function NouveauPariEcran({ navigation }) {
         forme_equipes: etape2.formeEquipes,
         contexte_blessures: etape2.contexteBlessures || 'RAS',
         confiance: etape2.confiance,
+        cote_boostee: etape2.coteBoostee,
         statut: 'en_attente',
         profit_perte: 0,
       })
@@ -733,6 +737,40 @@ export default function NouveauPariEcran({ navigation }) {
           autoFocus
         />
       )}
+
+      {/* Cote boostée */}
+      <Pressable
+        onPress={() => setEtape2(p => ({ ...p, coteBoostee: !p.coteBoostee }))}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 10,
+          paddingHorizontal: 16,
+          paddingVertical: 14,
+          borderRadius: 14,
+          borderWidth: etape2.coteBoostee ? 2 : 1.5,
+          borderColor: etape2.coteBoostee ? '#f59e0b' : c.bordure,
+          backgroundColor: etape2.coteBoostee ? '#fef3c7' : c.fondCarte,
+          marginBottom: 16,
+        }}
+      >
+        <Ionicons name="flash" size={20} color={etape2.coteBoostee ? '#d97706' : c.bordure} />
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 14, fontWeight: etape2.coteBoostee ? '700' : '500', color: etape2.coteBoostee ? '#92400e' : c.texte }}>
+            Cote boostée
+          </Text>
+          <Text style={{ fontSize: 11, color: etape2.coteBoostee ? '#b45309' : c.texteSecondaire, marginTop: 1 }}>
+            La cote a été augmentée par le bookmaker
+          </Text>
+        </View>
+        <View style={{
+          width: 24, height: 24, borderRadius: 12,
+          backgroundColor: etape2.coteBoostee ? '#f59e0b' : c.fondBadge,
+          alignItems: 'center', justifyContent: 'center',
+        }}>
+          {etape2.coteBoostee && <Ionicons name="checkmark" size={14} color="#ffffff" />}
+        </View>
+      </Pressable>
 
       {/* Confiance */}
       <Text style={{ fontSize: 13, fontWeight: '600', color: c.texteTertiaire, marginBottom: 8 }}>

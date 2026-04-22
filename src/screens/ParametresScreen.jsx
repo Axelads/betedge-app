@@ -332,6 +332,7 @@ export default function ParametresScreen() {
         }
       </Pressable>
 
+
     </ScrollView>
   )
 }

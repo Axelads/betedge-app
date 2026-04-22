@@ -1,12 +1,12 @@
 import React, { useState, useCallback } from 'react'
 import {
-  View, Text, ScrollView, Pressable, ActivityIndicator
+  View, Text, ScrollView, Pressable, ActivityIndicator, Modal, TextInput, Alert
 } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
-import { getTousLesParis } from '../services/pocketbase'
-import { calculerROI, calculerTauxReussite } from '../services/stats'
+import { getTousLesParis, mettreAJourResultat } from '../services/pocketbase'
+import { calculerROI, calculerTauxReussite, calculerMeilleureSerieVictoires, trouverMeilleureCoteGagnee } from '../services/stats'
 import { useTheme } from '../context/ThemeContext'
 
 const EMOJI_SPORT = {
@@ -42,16 +42,116 @@ const calculerSerieEnCours = (paris) => {
   return { nb, type: premierStatut }
 }
 
-// Carte de stat rapide
-function CarteStatRapide({ titre, valeur, sousTexte, couleurValeur, icone, couleurIcone, c }) {
+// Modale saisie de résultat (depuis l'accueil)
+function ModaleResultat({ pari, visible, onFermer, onSauvegarde }) {
+  const { c } = useTheme()
+  const [statut, setStatut] = useState('gagne')
+  const [score, setScore] = useState('')
+  const [chargement, setChargement] = useState(false)
+
+  const handleSauvegarder = async () => {
+    setChargement(true)
+    try {
+      await mettreAJourResultat(pari.id, statut, score)
+      onSauvegarde()
+      onFermer()
+    } catch (_) {
+      Alert.alert('Erreur', 'Impossible de mettre à jour le résultat.')
+    } finally {
+      setChargement(false)
+    }
+  }
+
   return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onFermer}>
+      <View style={{ flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' }}>
+        <View style={{ backgroundColor: c.fondModal, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', color: c.texte, marginBottom: 4 }}>
+            Entrer le résultat
+          </Text>
+          <Text style={{ fontSize: 14, color: c.texteSecondaire, marginBottom: 16 }}>
+            {pari?.rencontre}
+          </Text>
+
+          <Text style={{ fontSize: 13, fontWeight: '600', color: c.texteTertiaire, marginBottom: 8 }}>
+            Résultat *
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+            {['gagne', 'perdu', 'nul', 'cashout'].map(s => (
+              <Pressable
+                key={s}
+                onPress={() => setStatut(s)}
+                style={{
+                  flex: 1, paddingVertical: 8, borderRadius: 12, borderWidth: 1, alignItems: 'center',
+                  backgroundColor: statut === s ? '#2563eb' : c.fondCarte,
+                  borderColor: statut === s ? '#2563eb' : c.bordure,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Ionicons
+                    name={CONFIG_STATUT[s].icon}
+                    size={13}
+                    color={statut === s ? '#ffffff' : CONFIG_STATUT[s].iconColor}
+                  />
+                  <Text style={{ fontSize: 11, fontWeight: '600', color: statut === s ? '#ffffff' : c.texte }}>
+                    {CONFIG_STATUT[s].label}
+                  </Text>
+                </View>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={{ fontSize: 13, fontWeight: '600', color: c.texteTertiaire, marginBottom: 8 }}>
+            Score final
+          </Text>
+          <TextInput
+            style={{
+              backgroundColor: c.fondInput,
+              borderWidth: 1,
+              borderColor: c.bordure,
+              borderRadius: 12,
+              paddingHorizontal: 16,
+              paddingVertical: 12,
+              marginBottom: 24,
+              color: c.texte,
+            }}
+            placeholder="2-1"
+            placeholderTextColor={c.textePlaceholder}
+            value={score}
+            onChangeText={setScore}
+          />
+
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <Pressable
+              onPress={onFermer}
+              style={{ flex: 1, backgroundColor: c.fondBadge, borderRadius: 12, paddingVertical: 16, alignItems: 'center' }}
+            >
+              <Text style={{ color: c.texte, fontWeight: 'bold' }}>Annuler</Text>
+            </Pressable>
+            <Pressable
+              onPress={handleSauvegarder}
+              disabled={chargement}
+              style={{ flex: 1, borderRadius: 12, paddingVertical: 16, alignItems: 'center', backgroundColor: chargement ? '#9ca3af' : '#2563eb' }}
+            >
+              <Text style={{ color: '#fff', fontWeight: 'bold' }}>{chargement ? 'Sauvegarde...' : 'Confirmer'}</Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  )
+}
+
+// Carte de stat rapide
+function CarteStatRapide({ titre, valeur, sousTexte, couleurValeur, icone, couleurIcone, c, onPress }) {
+  const contenu = (
     <View style={{
       flex: 1,
       backgroundColor: c.fondCarte,
       borderRadius: 16,
       padding: 14,
       borderWidth: 1,
-      borderColor: c.bordure,
+      borderColor: onPress ? '#3b82f6' : c.bordure,
     }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
         <Text style={{ fontSize: 12, color: c.texteSecondaire, fontWeight: '500' }}>{titre}</Text>
@@ -67,27 +167,40 @@ function CarteStatRapide({ titre, valeur, sousTexte, couleurValeur, icone, coule
       ) : null}
     </View>
   )
+
+  if (onPress) {
+    return (
+      <Pressable style={{ flex: 1 }} onPress={onPress}>
+        {contenu}
+      </Pressable>
+    )
+  }
+  return contenu
 }
 
 // Mini card d'un pari récent
-function CartePariRecent({ pari, c }) {
+function CartePariRecent({ pari, c, onPress }) {
   const cfg = CONFIG_STATUT[pari.statut] ?? CONFIG_STATUT.en_attente
   const emoji = EMOJI_SPORT[pari.sport] ?? '🏆'
   const profitPerte = pari.profit_perte ?? 0
   const dateMatch = new Date(pari.date_match).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
 
   return (
-    <View style={{
-      backgroundColor: c.fondCarte,
-      borderRadius: 14,
-      padding: 14,
-      marginBottom: 10,
-      borderWidth: 1,
-      borderColor: c.bordure,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-    }}>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        backgroundColor: c.fondCarte,
+        borderRadius: 14,
+        padding: 14,
+        marginBottom: 10,
+        borderWidth: 1,
+        borderColor: c.bordure,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        opacity: pressed ? 0.75 : 1,
+      })}
+    >
       {/* Emoji sport */}
       <View style={{
         width: 40, height: 40, borderRadius: 12,
@@ -122,14 +235,16 @@ function CartePariRecent({ pari, c }) {
           </Text>
         )}
       </View>
-    </View>
+    </Pressable>
   )
 }
 
 export default function HomeScreen({ navigation }) {
-  const { c, estSombre } = useTheme()
+  const { c } = useTheme()
   const [paris, setParis] = useState([])
   const [chargement, setChargement] = useState(true)
+  const [pariSelectionne, setPariSelectionne] = useState(null)
+  const [modaleVisible, setModaleVisible] = useState(false)
 
   const chargerDonnees = useCallback(async () => {
     setChargement(true)
@@ -142,6 +257,15 @@ export default function HomeScreen({ navigation }) {
     }
   }, [])
 
+  const ouvrirPari = (pari) => {
+    if (pari.statut === 'en_attente') {
+      setPariSelectionne(pari)
+      setModaleVisible(true)
+    } else {
+      navigation.navigate('Historique')
+    }
+  }
+
   // Recharger à chaque fois que l'écran devient actif
   useFocusEffect(chargerDonnees)
 
@@ -151,6 +275,8 @@ export default function HomeScreen({ navigation }) {
   const tauxReussite = calculerTauxReussite(parisTermines)
   const profitTotal = parisTermines.reduce((sum, p) => sum + (p.profit_perte ?? 0), 0)
   const serie = calculerSerieEnCours(paris)
+  const meilleureSerieVictoires = calculerMeilleureSerieVictoires(paris)
+  const meilleureCoteGagnee = trouverMeilleureCoteGagnee(paris)
   const parisEnAttente = paris.filter(p => p.statut === 'en_attente')
   const cinqDerniers = paris.slice(0, 5)
 
@@ -228,6 +354,7 @@ export default function HomeScreen({ navigation }) {
             sousTexte={parisEnAttente.length > 0 ? 'résultats à saisir' : 'aucun en cours'}
             couleurIcone="#3b82f6"
             icone="time-outline"
+            onPress={parisEnAttente.length > 0 ? () => navigation.navigate('Historique', { filtreInitial: 'en_attente' }) : undefined}
           />
         </View>
 
@@ -247,6 +374,28 @@ export default function HomeScreen({ navigation }) {
             couleurValeur={profitTotal >= 0 ? '#16a34a' : '#dc2626'}
             couleurIcone={profitTotal >= 0 ? '#16a34a' : '#dc2626'}
             icone={profitTotal >= 0 ? 'trending-up-outline' : 'trending-down-outline'}
+          />
+        </View>
+
+        {/* ── Records ──────────────────────────────────────────────────────── */}
+        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
+          <CarteStatRapide
+            c={c}
+            titre="Meilleure série"
+            valeur={meilleureSerieVictoires > 0 ? `${meilleureSerieVictoires}` : '—'}
+            sousTexte={meilleureSerieVictoires > 0 ? 'victoires de suite' : 'aucune victoire'}
+            couleurValeur="#f59e0b"
+            couleurIcone="#f59e0b"
+            icone="flame-outline"
+          />
+          <CarteStatRapide
+            c={c}
+            titre="Meilleure cote"
+            valeur={meilleureCoteGagnee !== null ? meilleureCoteGagnee.toFixed(2) : '—'}
+            sousTexte={meilleureCoteGagnee !== null ? 'sur un pari gagné' : 'aucune victoire'}
+            couleurValeur="#8b5cf6"
+            couleurIcone="#8b5cf6"
+            icone="star-outline"
           />
         </View>
 
@@ -279,7 +428,7 @@ export default function HomeScreen({ navigation }) {
           </View>
         ) : (
           cinqDerniers.map(pari => (
-            <CartePariRecent key={pari.id} pari={pari} c={c} />
+            <CartePariRecent key={pari.id} pari={pari} c={c} onPress={() => ouvrirPari(pari)} />
           ))
         )}
       </ScrollView>
@@ -307,6 +456,15 @@ export default function HomeScreen({ navigation }) {
       >
         <Ionicons name="add" size={28} color="#ffffff" />
       </Pressable>
+
+      {pariSelectionne && (
+        <ModaleResultat
+          pari={pariSelectionne}
+          visible={modaleVisible}
+          onFermer={() => setModaleVisible(false)}
+          onSauvegarde={chargerDonnees}
+        />
+      )}
     </View>
   )
 }

@@ -98,6 +98,40 @@ export const calculerMeilleurssTags = (paris) => {
 }
 
 /**
+ * Meilleure série de victoires consécutives all-time.
+ * @param {Array} paris
+ * @returns {number}
+ */
+export const calculerMeilleureSerieVictoires = (paris) => {
+  const termines = paris
+    .filter(p => p.statut === 'gagne' || p.statut === 'perdu')
+    .sort((a, b) => new Date(a.created) - new Date(b.created))
+
+  let meilleure = 0
+  let courante = 0
+  for (const pari of termines) {
+    if (pari.statut === 'gagne') {
+      courante++
+      if (courante > meilleure) meilleure = courante
+    } else {
+      courante = 0
+    }
+  }
+  return meilleure
+}
+
+/**
+ * Meilleure cote passée sur un pari gagné.
+ * @param {Array} paris
+ * @returns {number|null}
+ */
+export const trouverMeilleureCoteGagnee = (paris) => {
+  const gagnes = paris.filter(p => p.statut === 'gagne')
+  if (gagnes.length === 0) return null
+  return Math.max(...gagnes.map(p => p.cote))
+}
+
+/**
  * Évolution de la bankroll dans le temps (triée par date).
  * @param {Array} paris - paris triés par date croissante
  * @param {number} bankrollInitiale

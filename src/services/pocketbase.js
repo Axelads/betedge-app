@@ -6,6 +6,8 @@ import PocketBase from 'pocketbase'
 
 const pb = new PocketBase(process.env.EXPO_PUBLIC_PB_URL ?? 'https://unwilling-camella-axelads-f3f3ad2e.koyeb.app')
 
+export const ID_SUPERUSER = 'ujotze4rf8qhs9k'
+
 /**
  * Calcule le profit/perte en fonction du statut du pari.
  */
@@ -44,8 +46,9 @@ export const mettreAJourResultat = async (id, statut, scoreFinal) => {
 
 export const getParisgagnants = async () => {
   try {
+    const userId = pb.authStore.record?.id
     return await pb.collection('paris').getFullList({
-      filter: 'statut = "gagne"',
+      filter: `statut = "gagne" && user = "${userId}"`,
       sort: '-created',
     })
   } catch (error) {
@@ -56,8 +59,11 @@ export const getParisgagnants = async () => {
 
 export const getTousLesParis = async () => {
   try {
+    const userId = pb.authStore.record?.id
+    const estAdmin = userId === ID_SUPERUSER
     return await pb.collection('paris').getFullList({
       sort: '-created',
+      ...(estAdmin ? {} : { filter: `user = "${userId}"` }),
     })
   } catch (error) {
     console.error('getTousLesParis erreur:', error)
@@ -67,8 +73,9 @@ export const getTousLesParis = async () => {
 
 export const getParisEnAttente = async () => {
   try {
+    const userId = pb.authStore.record?.id
     return await pb.collection('paris').getFullList({
-      filter: 'statut = "en_attente"',
+      filter: `statut = "en_attente" && user = "${userId}"`,
       sort: '-created',
     })
   } catch (error) {
@@ -142,6 +149,22 @@ export const sauvegarderProfil = async (donnees) => {
     }
   } catch (error) {
     console.error('sauvegarderProfil erreur:', error)
+    throw error
+  }
+}
+
+// ─── Fonctions admin (superuser uniquement) ───────────────────────────────────
+
+export const getToutesLesDonneesAdmin = async () => {
+  try {
+    const [tousLesParis, toutesLesAlertes, tousProfils] = await Promise.all([
+      pb.collection('paris').getFullList({ sort: '-created', expand: 'user' }),
+      pb.collection('alertes_bot').getFullList({ sort: '-created', expand: 'user' }),
+      pb.collection('profils').getFullList({ expand: 'user' }),
+    ])
+    return { tousLesParis, toutesLesAlertes, tousProfils }
+  } catch (error) {
+    console.error('getToutesLesDonneesAdmin erreur:', error)
     throw error
   }
 }

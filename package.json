@@ -20,6 +20,7 @@
     "expo-linear-gradient": "~55.0.13",
     "expo-linking": "~55.0.13",
     "expo-secure-store": "~55.0.13",
+    "expo-sharing": "^55.0.18",
     "expo-status-bar": "~55.0.5",
     "expo-web-browser": "~55.0.14",
     "nativewind": "^4.2.3",
@@ -30,6 +31,7 @@
     "react-native-screens": "~4.23.0",
     "react-native-sse": "^1.2.1",
     "react-native-svg": "15.15.3",
+    "react-native-view-shot": "^4.0.3",
     "tailwindcss": "^3.4.19"
   },
   "private": true,

@@ -8,6 +8,7 @@ import {
   Alert,
   StatusBar,
 } from 'react-native'
+import FooterSignature from '../components/FooterSignature'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
 import Svg, { Path } from 'react-native-svg'
@@ -104,7 +105,7 @@ export default function ConnexionScreen() {
 
           <Image
             source={LOGO_ECRITURE}
-            style={{ width: 300, height: 80, resizeMode: 'contain', marginBottom: 20 }}
+            style={{ width: 340, height: 100, resizeMode: 'contain', marginBottom: 20 }}
           />
 
           <Text style={{
@@ -230,6 +231,8 @@ export default function ConnexionScreen() {
             Accès privé — BetEdge est une application personnelle.{'\n'}
             Vos données restent privées et sécurisées.
           </Text>
+
+          <FooterSignature couleurTexte="#94a3b8" couleurLien="#3b82f6" />
         </View>
       </LinearGradient>
     </>

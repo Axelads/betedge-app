@@ -1,6 +1,7 @@
 import './global.css'
 import { useState, useEffect } from 'react'
-import { Pressable, Image, View, ActivityIndicator } from 'react-native'
+import { Pressable, Image, View, ActivityIndicator, Alert } from 'react-native'
+import FooterSignature from './src/components/FooterSignature'
 import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
@@ -18,9 +19,18 @@ import HistoriqueParis from './src/screens/BetHistoryScreen'
 import StatsScreen from './src/screens/StatsScreen'
 import ConnexionScreen from './src/screens/ConnexionScreen'
 import ParametresEcran from './src/screens/ParametresScreen'
+import AdminScreen from './src/screens/AdminScreen'
 import ModaleOnboarding from './src/components/ModaleOnboarding'
+import { pb, ID_SUPERUSER } from './src/services/pocketbase'
 
 const Tab = createBottomTabNavigator()
+
+const avecFooter = (Composant) => (props) => (
+  <View style={{ flex: 1 }}>
+    <Composant {...props} />
+    <FooterSignature />
+  </View>
+)
 
 // Bouton soleil/lune dans le header
 function BoutonTheme() {
@@ -45,7 +55,16 @@ function BoutonDeconnexion() {
   const { seDeconnecter } = useAuth()
   return (
     <Pressable
-      onPress={seDeconnecter}
+      onPress={() =>
+        Alert.alert(
+          'Déconnexion',
+          'Voulez-vous vraiment vous déconnecter ?',
+          [
+            { text: 'Annuler', style: 'cancel' },
+            { text: 'Se déconnecter', style: 'destructive', onPress: seDeconnecter },
+          ]
+        )
+      }
       style={{ marginLeft: 16, padding: 4 }}
       hitSlop={8}
     >
@@ -69,6 +88,7 @@ function BoutonInfo({ onPress }) {
 
 function NavigateurPrincipal({ onOuvrirInfo }) {
   const { estSombre } = useTheme()
+  const estAdmin = pb.authStore.record?.id === ID_SUPERUSER
 
   return (
     <NavigationContainer theme={estSombre ? DarkTheme : DefaultTheme}>
@@ -79,7 +99,7 @@ function NavigateurPrincipal({ onOuvrirInfo }) {
           headerTitle: () => (
             <Image
               source={LOGO_ECRITURE}
-              style={{ height: 38, width: 180, resizeMode: 'contain' }}
+              style={{ height: 48, width: 220, resizeMode: 'contain' }}
             />
           ),
           headerLeft: () => <BoutonDeconnexion />,
@@ -96,7 +116,7 @@ function NavigateurPrincipal({ onOuvrirInfo }) {
       >
         <Tab.Screen
           name="Home"
-          component={HomeScreen}
+          component={avecFooter(HomeScreen)}
           options={{
             title: 'Accueil',
             tabBarLabel: 'Accueil',
@@ -105,7 +125,7 @@ function NavigateurPrincipal({ onOuvrirInfo }) {
         />
         <Tab.Screen
           name="NouveauPari"
-          component={NouveauPariEcran}
+          component={avecFooter(NouveauPariEcran)}
           options={{
             title: 'Nouveau pari',
             tabBarLabel: 'Nouveau pari',
@@ -114,7 +134,7 @@ function NavigateurPrincipal({ onOuvrirInfo }) {
         />
         <Tab.Screen
           name="Historique"
-          component={HistoriqueParis}
+          component={avecFooter(HistoriqueParis)}
           options={{
             title: 'Historique',
             tabBarLabel: 'Historique',
@@ -123,7 +143,7 @@ function NavigateurPrincipal({ onOuvrirInfo }) {
         />
         <Tab.Screen
           name="Stats"
-          component={StatsScreen}
+          component={avecFooter(StatsScreen)}
           options={{
             title: 'Statistiques',
             tabBarLabel: 'Stats',
@@ -132,13 +152,24 @@ function NavigateurPrincipal({ onOuvrirInfo }) {
         />
         <Tab.Screen
           name="Parametres"
-          component={ParametresEcran}
+          component={avecFooter(ParametresEcran)}
           options={{
             title: 'Paramètres',
             tabBarLabel: 'Paramètres',
             tabBarIcon: ({ color, size }) => <Ionicons name="settings-outline" color={color} size={size} />,
           }}
         />
+        {estAdmin && (
+          <Tab.Screen
+            name="Admin"
+            component={avecFooter(AdminScreen)}
+            options={{
+              title: 'Admin',
+              tabBarLabel: 'Admin',
+              tabBarIcon: ({ color, size }) => <Ionicons name="shield-checkmark-outline" color={color} size={size} />,
+            }}
+          />
+        )}
       </Tab.Navigator>
     </NavigationContainer>
   )
