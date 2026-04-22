@@ -29,7 +29,7 @@ const CONFIG_STATUT = {
 const calculerSerieEnCours = (paris) => {
   const termines = paris
     .filter(p => p.statut === 'gagne' || p.statut === 'perdu')
-    .sort((a, b) => new Date(b.created) - new Date(a.created))
+    .sort((a, b) => new Date(b.date_match) - new Date(a.date_match))
 
   if (termines.length === 0) return { nb: 0, type: null }
 
