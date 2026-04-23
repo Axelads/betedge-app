@@ -62,7 +62,7 @@ export const getTousLesParis = async () => {
     const userId = pb.authStore.record?.id
     const estAdmin = userId === ID_SUPERUSER
     return await pb.collection('paris').getFullList({
-      sort: '-date_match',
+      sort: '-date_match,-created',
       ...(estAdmin ? {} : { filter: `user = "${userId}"` }),
     })
   } catch (error) {
@@ -76,7 +76,7 @@ export const getParisEnAttente = async () => {
     const userId = pb.authStore.record?.id
     return await pb.collection('paris').getFullList({
       filter: `statut = "en_attente" && user = "${userId}"`,
-      sort: '-date_match',
+      sort: '-date_match,-created',
     })
   } catch (error) {
     console.error('getParisEnAttente erreur:', error)

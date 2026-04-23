@@ -2,6 +2,19 @@
 
 ---
 
+## Traité le 2026-04-23
+
+### Historique des paris dans le désordre lors de validations groupées
+
+- **Retour original :** "L'historique des paris n'est pas dans l'ordre chronologique par rapport aux dates renseignées lors de la prise de pari mais dans l'ordre de validation du résultat de match. Si on décide par ex de valider les matchs des 3 derniers jours au même moment on risque d'avoir un désordre. Ce qui fausse également la séries de victoires/défaites dans le menu."
+- **Correction appliquée :** Ajout d'un tri secondaire par `created` (date de saisie du pari) dans tous les contextes de tri par `date_match`. Quand plusieurs paris partagent la même date de match, PocketBase utilisait implicitement `updated` comme critère secondaire, ce qui faisait remonter les paris validés en dernier — provoquant le désordre signalé. Le tri est maintenant stable : `date_match` en primaire, `created` en secondaire. Les calculs JS de séries (série en cours et meilleure série) bénéficient du même correctif.
+- **Fichiers modifiés :**
+  - `src/services/pocketbase.js` — `getTousLesParis()` et `getParisEnAttente()` : `sort: '-date_match,-created'`
+  - `src/screens/HomeScreen.jsx` — `calculerSerieEnCours()` : tri secondaire par `created`
+  - `src/services/stats.js` — `calculerMeilleureSerieVictoires()` et `calculerHistoriqueBankroll()` : tri secondaire par `created`
+
+---
+
 ## Traité le 2026-04-22
 
 ### Modification du résultat d'un pari après validation

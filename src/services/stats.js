@@ -105,7 +105,10 @@ export const calculerMeilleurssTags = (paris) => {
 export const calculerMeilleureSerieVictoires = (paris) => {
   const termines = paris
     .filter(p => p.statut === 'gagne' || p.statut === 'perdu')
-    .sort((a, b) => new Date(a.date_match) - new Date(b.date_match))
+    .sort((a, b) => {
+      const diffDate = new Date(a.date_match) - new Date(b.date_match)
+      return diffDate !== 0 ? diffDate : new Date(a.created) - new Date(b.created)
+    })
 
   let meilleure = 0
   let courante = 0
@@ -140,7 +143,10 @@ export const trouverMeilleureCoteGagnee = (paris) => {
 export const calculerHistoriqueBankroll = (paris, bankrollInitiale = 0) => {
   const termines = paris
     .filter(p => p.statut !== 'en_attente')
-    .sort((a, b) => new Date(a.date_match) - new Date(b.date_match))
+    .sort((a, b) => {
+      const diffDate = new Date(a.date_match) - new Date(b.date_match)
+      return diffDate !== 0 ? diffDate : new Date(a.created) - new Date(b.created)
+    })
 
   let courante = bankrollInitiale
   return termines.map(pari => {
