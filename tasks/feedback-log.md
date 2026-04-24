@@ -2,6 +2,15 @@
 
 ---
 
+## En attente de clarification — 2026-04-24
+
+### Refonte formulaire prise de pari + paris combinés multi-lignes
+
+- **Retour original :** "Sans doute le truc le plus technique et pas sûr que ça vaille le coup à court terme mais dans un monde idéal où tout se fait tout seul imaginons 🤗: Inverser l'ordre, mettre le type de match au dessus de l'intitulé lors de la prise de pari, je pense notamment aux paris combinés. En sélectionnant les paris combinés on pourrait alors avoir d'office un deuxième intitulé qui pop, et un + pour ajouter des paris. Ca permet d'être plus précis mais forcément ça doit pas être facile à build et ça implique aussi de penser l'esthétique après coup dans l'historique de paris. (Et si c'est fait, ajouter un onglet MyMatch ou l'incorporer dans le blaze psq ca revient au même qu'un combiné en fait)"
+- **Motif de mise en attente :** Ce retour mêle deux niveaux de complexité très différents — un simple réordonnancement de champs (type de pari avant rencontre) et une refonte architecturale majeure (paris combinés avec N sélections, nouveau schéma PocketBase, affichage dans l'historique, onglet MyMatch/blaze). Thomas lui-même qualifie l'ensemble de "truc le plus technique" et "pas sûr que ça vaille le coup à court terme". Avant toute implémentation, il faut clarifier : (1) faut-il traiter uniquement le réordonnancement des champs, ou l'ensemble ? (2) Que désigne précisément "blaze" dans l'app ?
+
+---
+
 ## Traité le 2026-04-23
 
 ### Historique des paris dans le désordre lors de validations groupées
