@@ -1,7 +1,7 @@
 # Feedback BetEdge — Thomas
 
 > Synchronisé automatiquement depuis Google Doc.
-> Dernière mise à jour : 2026-04-25 10:34
+> Dernière mise à jour : 2026-04-25 11:34
 
 ---
 
@@ -9,10 +9,6 @@
 
 Idées:
 
-L'historique des paris n'est pas dans l'ordre chronologique par rapport aux dates renseignées lors de la prise de pari mais dans l'ordre de validation du résultat de match. Si on décide par ex de valider les matchs des 3 derniers jours au même moment on risque d'avoir un désordre. Ce qui fausse également la séries de victoires/défaites dans le menu, c'est dommage 😿
-
-
-Donner la possibilité de cliquer sur plusieurs sports différents lors d'une prise de pari pour des combinés multisports
 
 Ajouter une option “Cashout” quand on donne le résultat  (Qui ajoute une case en plus du score avec le montant récupéré. Faire les calculs en conséquence et afficher la case soit en orange en toutes circonstances, soit en vert si le cashout est supérieur à la mise et en rouge s'il est inférieur à la mise, à toi de choisir)
 
