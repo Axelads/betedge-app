@@ -14,8 +14,12 @@ const EMOJI_SPORT = {
   tennis:     '🎾',
   basketball: '🏀',
   rugby:      '🏉',
+  hockey:     '🏒',
   autre:      '🏆',
 }
+
+const emojiSportCompose = (sport) =>
+  sport ? sport.split(',').map(s => EMOJI_SPORT[s] ?? '🏆').join('') : '🏆'
 
 const CONFIG_STATUT = {
   en_attente: { icon: 'time-outline',          iconColor: '#d97706', label: 'En attente' },
@@ -191,7 +195,7 @@ function CarteStatRapide({ titre, valeur, sousTexte, couleurValeur, icone, coule
 // Mini card d'un pari récent
 function CartePariRecent({ pari, c, onPress }) {
   const cfg = CONFIG_STATUT[pari.statut] ?? CONFIG_STATUT.en_attente
-  const emoji = EMOJI_SPORT[pari.sport] ?? '🏆'
+  const emoji = emojiSportCompose(pari.sport)
   const profitPerte = pari.profit_perte ?? 0
   const dateMatch = new Date(pari.date_match).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
 

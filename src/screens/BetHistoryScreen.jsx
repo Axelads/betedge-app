@@ -19,8 +19,12 @@ const LABEL_SPORT = {
   tennis:     'TEN',
   basketball: 'BASK',
   rugby:      'RUGBY',
+  hockey:     'HOCK',
   autre:      'SPORT',
 }
+
+const labelSportCompose = (sport) =>
+  sport ? sport.split(',').map(s => LABEL_SPORT[s] ?? 'SPORT').join('+') : 'SPORT'
 
 function ModaleResultat({ pari, visible, onFermer, onSauvegarde }) {
   const { c } = useTheme()
@@ -128,7 +132,7 @@ function ModaleResultat({ pari, visible, onFermer, onSauvegarde }) {
 function LignePari({ pari, onResultat }) {
   const { c } = useTheme()
   const cfg = CONFIG_STATUT[pari.statut] ?? CONFIG_STATUT.en_attente
-  const labelSport = LABEL_SPORT[pari.sport] ?? 'SPORT'
+  const labelSport = labelSportCompose(pari.sport)
   const dateMatch = new Date(pari.date_match).toLocaleDateString('fr-FR')
   const profitPerte = pari.profit_perte ?? 0
 

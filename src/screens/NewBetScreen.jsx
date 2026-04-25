@@ -146,7 +146,7 @@ const TAGS_RAISONNEMENT = [
 ]
 
 const ETAPE1_INIT = {
-  sport: '', competition: '', rencontre: '', dateMatch: new Date(),
+  sports: [], competition: '', rencontre: '', dateMatch: new Date(),
   typePari: '', valeurPari: '', cote: '', mise: '', bookmaker: '',
 }
 
@@ -293,6 +293,15 @@ export default function NouveauPariEcran({ navigation }) {
   const [modaleAideVisible, setModaleAideVisible] = useState(false)
   const [selectTypePariVisible, setSelectTypePariVisible] = useState(false)
 
+  const basculerSport = (valeur) => {
+    setEtape1(p => ({
+      ...p,
+      sports: p.sports.includes(valeur)
+        ? p.sports.filter(s => s !== valeur)
+        : [...p.sports, valeur],
+    }))
+  }
+
   const basculerTag = (cle) => {
     setEtape2(prev => ({
       ...prev,
@@ -303,8 +312,8 @@ export default function NouveauPariEcran({ navigation }) {
   }
 
   const validerEtape1 = () => {
-    const { sport, competition, rencontre, typePari, valeurPari, cote, mise, bookmaker } = etape1
-    if (!sport || !competition || !rencontre || !typePari || !valeurPari || !cote || !mise || !bookmaker) {
+    const { sports, competition, rencontre, typePari, valeurPari, cote, mise, bookmaker } = etape1
+    if (!sports.length || !competition || !rencontre || !typePari || !valeurPari || !cote || !mise || !bookmaker) {
       Alert.alert('Champs manquants', 'Remplis tous les champs obligatoires.')
       return false
     }
@@ -338,7 +347,7 @@ export default function NouveauPariEcran({ navigation }) {
     setChargement(true)
     try {
       await creerPari({
-        sport: etape1.sport,
+        sport: etape1.sports.join(','),
         competition: etape1.competition,
         rencontre: etape1.rencontre,
         date_match: etape1.dateMatch.toISOString(),
@@ -393,17 +402,31 @@ export default function NouveauPariEcran({ navigation }) {
         </Text>
 
         {/* Sport */}
-        <Text style={{ fontSize: 13, fontWeight: '600', color: c.texteTertiaire, marginBottom: 8 }}>Sport *</Text>
-        <View className="flex-row flex-wrap justify-between mb-4">
+        <View className="flex-row justify-between items-center mb-2">
+          <Text style={{ fontSize: 13, fontWeight: '600', color: c.texteTertiaire }}>Sport *</Text>
+          <Text style={{ fontSize: 11, color: c.texteSecondaire }}>Multi-sélection possible</Text>
+        </View>
+        <View className="flex-row flex-wrap justify-between mb-2">
           {SPORTS.map(s => (
             <SportPill
               key={s.value}
               sport={s}
-              selected={etape1.sport === s.value}
-              onPress={() => setEtape1(p => ({ ...p, sport: s.value }))}
+              selected={etape1.sports.includes(s.value)}
+              onPress={() => basculerSport(s.value)}
             />
           ))}
         </View>
+        {etape1.sports.length > 1 && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12, backgroundColor: c.fondCarteActive, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
+            <Ionicons name="layers-outline" size={14} color={c.texteSecondaire} />
+            <Text style={{ fontSize: 12, color: c.texteSecondaire }}>
+              Combiné multisport : {etape1.sports.map(v => SPORTS.find(s => s.value === v)?.label).join(' + ')}
+            </Text>
+          </View>
+        )}
+        {etape1.sports.length === 0 && (
+          <View style={{ marginBottom: 12 }} />
+        )}
 
         {/* Compétition */}
         <Text style={{ fontSize: 13, fontWeight: '600', color: c.texteTertiaire, marginBottom: 8 }}>Compétition *</Text>

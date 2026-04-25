@@ -2,6 +2,20 @@
 
 ---
 
+## Traité le 2026-04-25
+
+### Multi-sélection de sports pour combinés multisports
+
+- **Retour original :** "Donner la possibilité de cliquer sur plusieurs sports différents lors d'une prise de pari pour des combinés multisports"
+- **Correction appliquée :** La sélection de sport dans le formulaire de prise de pari passe d'un choix unique à une multi-sélection par toggle. Les sports sélectionnés sont stockés dans un tableau `sports` en local, puis joints par virgule (`'football,tennis'`) dans le champ `sport` de PocketBase lors de l'enregistrement — compatible avec le champ texte existant. Un bandeau récapitulatif "Combiné multisport : Football + Tennis" s'affiche automatiquement dès que deux sports ou plus sont sélectionnés. L'affichage dans l'historique, la home et la vue admin gère désormais les valeurs multi-sport en les splitant et en concatenant les labels/emojis.
+- **Fichiers modifiés :**
+  - `src/screens/NewBetScreen.jsx` — état `sports: []`, fonction `basculerSport()`, validation, envoi multi-sport, bandeau récapitulatif
+  - `src/screens/BetHistoryScreen.jsx` — `labelSportCompose()`, ajout `hockey` dans `LABEL_SPORT`
+  - `src/screens/HomeScreen.jsx` — `emojiSportCompose()`, ajout `hockey` dans `EMOJI_SPORT`
+  - `src/screens/AdminScreen.jsx` — `emojiSportCompose()`, ajout `hockey` dans `EMOJI_SPORT`
+
+---
+
 ## En attente de clarification — 2026-04-24
 
 ### Refonte formulaire prise de pari + paris combinés multi-lignes

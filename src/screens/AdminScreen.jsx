@@ -11,8 +11,11 @@ import { calculerROI, calculerTauxReussite } from '../services/stats'
 import { useTheme } from '../context/ThemeContext'
 
 const EMOJI_SPORT = {
-  football: '⚽', tennis: '🎾', basketball: '🏀', rugby: '🏉', autre: '🏆',
+  football: '⚽', tennis: '🎾', basketball: '🏀', rugby: '🏉', hockey: '🏒', autre: '🏆',
 }
+
+const emojiSportCompose = (sport) =>
+  sport ? sport.split(',').map(s => EMOJI_SPORT[s] ?? '🏆').join('') : '🏆'
 
 const CONFIG_STATUT = {
   en_attente: { icon: 'time-outline',          couleur: '#d97706', label: 'En attente' },
@@ -233,7 +236,7 @@ function ModalDetailUtilisateur({ donnees, visible, onFermer, c, estSombre }) {
 
   const renderPari = ({ item: pari }) => {
     const cfg = CONFIG_STATUT[pari.statut] ?? CONFIG_STATUT.en_attente
-    const emoji = EMOJI_SPORT[pari.sport] ?? '🏆'
+    const emoji = emojiSportCompose(pari.sport)
     const date = new Date(pari.date_match).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
     const estElargi = pariElargiId === pari.id
     const tags = Array.isArray(pari.tags_raisonnement) ? pari.tags_raisonnement : []
