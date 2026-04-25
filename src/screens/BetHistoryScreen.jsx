@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   View, Text, FlatList, Pressable, Modal, TextInput, Alert, ActivityIndicator
 } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import { getTousLesParis, mettreAJourResultat } from '../services/pocketbase'
 import { useTheme } from '../context/ThemeContext'
 
@@ -14,17 +14,14 @@ const CONFIG_STATUT = {
   cashout:    { icon: 'cash-outline',           iconColor: '#2563eb', label: 'Remboursé',  couleur: 'text-blue-600',   fond: 'bg-blue-50 border-blue-200',             fondSombre: 'dark:bg-blue-900/30 dark:border-blue-800' },
 }
 
-const LABEL_SPORT = {
-  football:   'FOOT',
-  tennis:     'TEN',
-  basketball: 'BASK',
-  rugby:      'RUGBY',
-  hockey:     'HOCK',
-  autre:      'SPORT',
+const ICONE_SPORT = {
+  football:   'soccer',
+  tennis:     'tennis',
+  basketball: 'basketball',
+  rugby:      'rugby',
+  hockey:     'hockey-sticks',
+  autre:      'trophy-outline',
 }
-
-const labelSportCompose = (sport) =>
-  sport ? sport.split(',').map(s => LABEL_SPORT[s] ?? 'SPORT').join('+') : 'SPORT'
 
 function ModaleResultat({ pari, visible, onFermer, onSauvegarde }) {
   const { c } = useTheme()
@@ -132,7 +129,6 @@ function ModaleResultat({ pari, visible, onFermer, onSauvegarde }) {
 function LignePari({ pari, onResultat }) {
   const { c } = useTheme()
   const cfg = CONFIG_STATUT[pari.statut] ?? CONFIG_STATUT.en_attente
-  const labelSport = labelSportCompose(pari.sport)
   const dateMatch = new Date(pari.date_match).toLocaleDateString('fr-FR')
   const profitPerte = pari.profit_perte ?? 0
 
@@ -140,8 +136,10 @@ function LignePari({ pari, onResultat }) {
     <View className={`rounded-xl border mb-3 p-4 ${cfg.fond} ${cfg.fondSombre}`}>
       <View className="flex-row justify-between items-start mb-1">
         <View className="flex-row items-center flex-1 mr-2 gap-2">
-          <View style={{ backgroundColor: c.fondBadge, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
-            <Text style={{ fontSize: 11, fontWeight: 'bold', color: c.texteBadge }}>{labelSport}</Text>
+          <View style={{ backgroundColor: c.fondBadge, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+            {(pari.sport || 'autre').split(',').map((s, i) => (
+              <MaterialCommunityIcons key={i} name={ICONE_SPORT[s] ?? 'trophy-outline'} size={14} color={c.texteBadge} />
+            ))}
           </View>
           <Text style={{ fontWeight: 'bold', color: c.texte, flex: 1 }}>{pari.rencontre}</Text>
         </View>

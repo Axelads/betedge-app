@@ -4,22 +4,26 @@ import {
 } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { LinearGradient } from 'expo-linear-gradient'
-import { Ionicons } from '@expo/vector-icons'
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import { getTousLesParis, mettreAJourResultat } from '../services/pocketbase'
 import { calculerROI, calculerTauxReussite, calculerMeilleureSerieVictoires, trouverMeilleureCoteGagnee } from '../services/stats'
 import { useTheme } from '../context/ThemeContext'
 
-const EMOJI_SPORT = {
-  football:   '⚽',
-  tennis:     '🎾',
-  basketball: '🏀',
-  rugby:      '🏉',
-  hockey:     '🏒',
-  autre:      '🏆',
+const ICONE_SPORT = {
+  football:   'soccer',
+  tennis:     'tennis',
+  basketball: 'basketball',
+  rugby:      'rugby',
+  hockey:     'hockey-sticks',
+  autre:      'trophy-outline',
 }
 
-const emojiSportCompose = (sport) =>
-  sport ? sport.split(',').map(s => EMOJI_SPORT[s] ?? '🏆').join('') : '🏆'
+const IcônesSport = ({ sport, taille, couleur }) => {
+  const sports = sport ? sport.split(',') : ['autre']
+  return sports.map((s, i) => (
+    <MaterialCommunityIcons key={i} name={ICONE_SPORT[s] ?? 'trophy-outline'} size={taille} color={couleur} />
+  ))
+}
 
 const CONFIG_STATUT = {
   en_attente: { icon: 'time-outline',          iconColor: '#d97706', label: 'En attente' },
@@ -195,7 +199,6 @@ function CarteStatRapide({ titre, valeur, sousTexte, couleurValeur, icone, coule
 // Carte d'un pari récent (header / body / footer résultat)
 function CartePariRecent({ pari, c, onPress }) {
   const cfg = CONFIG_STATUT[pari.statut] ?? CONFIG_STATUT.en_attente
-  const emoji = emojiSportCompose(pari.sport)
   const profitPerte = pari.profit_perte ?? 0
   const dateMatch = new Date(pari.date_match).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
 
@@ -217,7 +220,9 @@ function CartePariRecent({ pari, c, onPress }) {
         {/* Ligne sport + compétition + date */}
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={{ fontSize: 16 }}>{emoji}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+              <IcônesSport sport={pari.sport} taille={16} couleur={c.texteSecondaire} />
+            </View>
             <Text style={{ fontSize: 12, color: c.texteSecondaire, fontWeight: '500' }} numberOfLines={1}>
               {pari.competition || pari.sport || '—'}
             </Text>

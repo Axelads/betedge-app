@@ -5,17 +5,26 @@ import {
 } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { LinearGradient } from 'expo-linear-gradient'
-import { Ionicons } from '@expo/vector-icons'
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import { getToutesLesDonneesAdmin, pb } from '../services/pocketbase'
 import { calculerROI, calculerTauxReussite } from '../services/stats'
 import { useTheme } from '../context/ThemeContext'
 
-const EMOJI_SPORT = {
-  football: '⚽', tennis: '🎾', basketball: '🏀', rugby: '🏉', hockey: '🏒', autre: '🏆',
+const ICONE_SPORT = {
+  football:   'soccer',
+  tennis:     'tennis',
+  basketball: 'basketball',
+  rugby:      'rugby',
+  hockey:     'hockey-sticks',
+  autre:      'trophy-outline',
 }
 
-const emojiSportCompose = (sport) =>
-  sport ? sport.split(',').map(s => EMOJI_SPORT[s] ?? '🏆').join('') : '🏆'
+const IcônesSport = ({ sport, taille, couleur }) => {
+  const sports = sport ? sport.split(',') : ['autre']
+  return sports.map((s, i) => (
+    <MaterialCommunityIcons key={i} name={ICONE_SPORT[s] ?? 'trophy-outline'} size={taille} color={couleur} />
+  ))
+}
 
 const CONFIG_STATUT = {
   en_attente: { icon: 'time-outline',          couleur: '#d97706', label: 'En attente' },
@@ -240,7 +249,6 @@ function ModalDetailUtilisateur({ donnees, visible, onFermer, c, estSombre }) {
 
   const renderPari = ({ item: pari }) => {
     const cfg = CONFIG_STATUT[pari.statut] ?? CONFIG_STATUT.en_attente
-    const emoji = emojiSportCompose(pari.sport)
     const date = new Date(pari.date_match).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
     const estElargi = pariElargiId === pari.id
     const tags = Array.isArray(pari.tags_raisonnement) ? pari.tags_raisonnement : []
@@ -265,8 +273,9 @@ function ModalDetailUtilisateur({ donnees, visible, onFermer, c, estSombre }) {
             width: 36, height: 36, borderRadius: 10,
             backgroundColor: c.fondBadge,
             alignItems: 'center', justifyContent: 'center',
+            flexDirection: 'row', gap: 2,
           }}>
-            <Text style={{ fontSize: 18 }}>{emoji}</Text>
+            <IcônesSport sport={pari.sport} taille={18} couleur={c.texteTertiaire} />
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={{ fontWeight: '600', color: c.texte, fontSize: 13 }} numberOfLines={1}>
@@ -500,10 +509,9 @@ function ModalDetailUtilisateur({ donnees, visible, onFermer, c, estSombre }) {
           {(profil?.sport_favori || profil?.plateforme_favorite || profil?.equipe_favorite) && (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
               {profil.sport_favori && (
-                <View style={{ backgroundColor: '#3b82f622', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 }}>
-                  <Text style={{ color: '#3b82f6', fontSize: 12, fontWeight: '600' }}>
-                    {EMOJI_SPORT[profil.sport_favori] ?? '🏆'} {profil.sport_favori}
-                  </Text>
+                <View style={{ backgroundColor: '#3b82f622', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <MaterialCommunityIcons name={ICONE_SPORT[profil.sport_favori] ?? 'trophy-outline'} size={13} color="#3b82f6" />
+                  <Text style={{ color: '#3b82f6', fontSize: 12, fontWeight: '600' }}>{profil.sport_favori}</Text>
                 </View>
               )}
               {profil.plateforme_favorite && (
