@@ -21,9 +21,88 @@ import ConnexionScreen from './src/screens/ConnexionScreen'
 import ParametresEcran from './src/screens/ParametresScreen'
 import AdminScreen from './src/screens/AdminScreen'
 import ModaleOnboarding from './src/components/ModaleOnboarding'
-import { pb, ID_SUPERUSER } from './src/services/pocketbase'
+import MopalePalmares from './src/components/MopalePalmares'
+import { pb, ID_SUPERUSER, getParisPlateformePeriode, getNbAlertesUtilisateurPeriode } from './src/services/pocketbase'
+import { calculerROI, calculerTauxReussite } from './src/services/stats'
 
 const Tab = createBottomTabNavigator()
+const CLE_PALMARES = 'betedge_palmares_'
+
+// ─── Helpers palmarès (définis hors composant, pas de hooks) ─────────────────
+
+const obtenirPeriodes = () => {
+  const maintenant = new Date()
+  const hier = new Date(maintenant)
+  hier.setDate(hier.getDate() - 1)
+
+  const debutSemaine = new Date(maintenant)
+  debutSemaine.setDate(debutSemaine.getDate() - 7)
+
+  let debutMois, finMois, labelMois
+  if (maintenant.getDate() <= 7) {
+    debutMois = new Date(maintenant.getFullYear(), maintenant.getMonth() - 1, 1)
+    finMois = new Date(maintenant.getFullYear(), maintenant.getMonth(), 0)
+    labelMois = debutMois.toLocaleString('fr-FR', { month: 'long', year: 'numeric' })
+  } else {
+    debutMois = new Date(maintenant.getFullYear(), maintenant.getMonth(), 1)
+    finMois = hier
+    labelMois = maintenant.toLocaleString('fr-FR', { month: 'long', year: 'numeric' })
+  }
+
+  const fmt = (d) => d.toISOString().substring(0, 10)
+  const labelSemaine = `du ${debutSemaine.getDate()} au ${hier.getDate()} ${hier.toLocaleString('fr-FR', { month: 'long' })}`
+
+  return {
+    semaine: { debut: fmt(debutSemaine), fin: fmt(hier), label: labelSemaine },
+    mois: { debut: fmt(debutMois), fin: fmt(finMois), label: labelMois },
+  }
+}
+
+const grouperParUtilisateur = (paris) => {
+  const map = {}
+  for (const pari of paris) {
+    const user = pari.expand?.user
+    if (!user) continue
+    if (!map[user.id]) map[user.id] = { user, paris: [] }
+    map[user.id].paris.push(pari)
+  }
+  return Object.values(map)
+}
+
+const trouverMeilleurParieur = (groupes) => {
+  let meilleur = null
+  let meilleurROI = -Infinity
+  for (const { user, paris } of groupes) {
+    const termines = paris.filter(p => p.statut === 'gagne' || p.statut === 'perdu')
+    if (termines.length === 0) continue
+    const roi = calculerROI(termines)
+    if (meilleur === null || roi > meilleurROI) {
+      meilleurROI = roi
+      meilleur = { user, paris }
+    }
+  }
+  return meilleur
+}
+
+const formaterDonneesParieur = (groupe, periode) => {
+  if (!groupe) return null
+  const { user, paris } = groupe
+  const termines = paris.filter(p => p.statut === 'gagne' || p.statut === 'perdu')
+  const gagnes = termines.filter(p => p.statut === 'gagne')
+  const profit = termines.reduce((s, p) => s + (p.profit_perte || 0), 0)
+  const avatarUrl = user.avatar ? pb.files.getURL(user, user.avatar) : null
+  return {
+    utilisateur: { id: user.id, nom: user.name || user.email || 'Anonyme', avatarUrl },
+    roi: calculerROI(termines),
+    profit,
+    tauxReussite: calculerTauxReussite(termines),
+    nbTermines: termines.length,
+    nbGagnes: gagnes.length,
+    label: periode.label,
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 const avecFooter = (Composant) => (props) => (
   <View style={{ flex: 1 }}>
@@ -178,12 +257,58 @@ function NavigateurPrincipal({ onOuvrirInfo }) {
 function AppNavigateur() {
   const { estConnecte, chargementInitial } = useAuth()
   const [montrerOnboarding, setMontrerOnboarding] = useState(false)
+  const [montrerPalmares, setMontrerPalmares] = useState(false)
+  const [donneesPalmares, setDonneesPalmares] = useState(null)
+
+  const verifierPalmares = async () => {
+    try {
+      const maintenant = new Date()
+      if (maintenant.getDay() !== 1) return  // Seulement le lundi
+
+      const cleLundi = `${CLE_PALMARES}${maintenant.toISOString().substring(0, 10)}`
+      const dejaVu = await SecureStore.getItemAsync(cleLundi)
+      if (dejaVu) return
+
+      const periodes = obtenirPeriodes()
+      const [parisSemaine, parisMois] = await Promise.all([
+        getParisPlateformePeriode(periodes.semaine.debut, periodes.semaine.fin),
+        getParisPlateformePeriode(periodes.mois.debut, periodes.mois.fin),
+      ])
+
+      const meilleurSemaine = trouverMeilleurParieur(grouperParUtilisateur(parisSemaine))
+      const meilleurMois = trouverMeilleurParieur(grouperParUtilisateur(parisMois))
+
+      if (!meilleurSemaine && !meilleurMois) return
+
+      let donneesMois = formaterDonneesParieur(meilleurMois, periodes.mois)
+      if (donneesMois) {
+        const nbAlertes = await getNbAlertesUtilisateurPeriode(
+          meilleurMois.user.id, periodes.mois.debut, periodes.mois.fin
+        )
+        donneesMois = { ...donneesMois, nbAlertes }
+      }
+
+      await SecureStore.setItemAsync(cleLundi, 'oui')
+      setDonneesPalmares({
+        semaine: formaterDonneesParieur(meilleurSemaine, periodes.semaine),
+        mois: donneesMois,
+      })
+      setMontrerPalmares(true)
+    } catch (err) {
+      console.error('verifierPalmares erreur:', err)
+    }
+  }
 
   useEffect(() => {
     if (!estConnecte) return
     SecureStore.getItemAsync(CLE_ONBOARDING).then(valeur => {
-      if (!valeur) setMontrerOnboarding(true)
-    }).catch(() => {})
+      if (!valeur) {
+        setMontrerOnboarding(true)
+        // Pas de palmarès pour un nouvel utilisateur (onboarding prioritaire)
+      } else {
+        verifierPalmares()
+      }
+    }).catch(() => { verifierPalmares() })
   }, [estConnecte])
 
   const fermerOnboarding = async () => {
@@ -209,6 +334,12 @@ function AppNavigateur() {
     <>
       <NavigateurPrincipal onOuvrirInfo={() => setMontrerOnboarding(true)} />
       <ModaleOnboarding visible={montrerOnboarding} onFermer={fermerOnboarding} />
+      <MopalePalmares
+        visible={montrerPalmares}
+        onFermer={() => setMontrerPalmares(false)}
+        donnees={donneesPalmares}
+        currentUserId={pb.authStore.record?.id}
+      />
     </>
   )
 }

@@ -117,18 +117,18 @@ function CarteUtilisateur({ donnees, onPress, c }) {
       style={({ pressed }) => ({
         backgroundColor: c.fondCarte,
         borderRadius: 16,
-        padding: 16,
-        marginBottom: 12,
+        marginBottom: 16,
         borderWidth: 1,
         borderColor: c.bordure,
         opacity: pressed ? 0.85 : 1,
+        overflow: 'hidden',
       })}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        {/* Avatar */}
+      {/* En-tête utilisateur */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 }}>
         <View style={{
           width: 48, height: 48, borderRadius: 24,
-          backgroundColor: '#3b82f6' + '22',
+          backgroundColor: '#3b82f622',
           alignItems: 'center', justifyContent: 'center',
           overflow: 'hidden',
         }}>
@@ -139,31 +139,35 @@ function CarteUtilisateur({ donnees, onPress, c }) {
           )}
         </View>
 
-        {/* Infos */}
         <View style={{ flex: 1 }}>
           <Text style={{ fontWeight: '700', fontSize: 15, color: c.texte }}>{user.name || 'Utilisateur'}</Text>
           <Text style={{ fontSize: 12, color: c.texteSecondaire, marginTop: 1 }}>{user.email}</Text>
         </View>
 
-        <Ionicons name="chevron-forward" size={18} color={c.texteSecondaire} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <Text style={{ fontSize: 11, color: c.texteSecondaire }}>Détail</Text>
+          <Ionicons name="chevron-forward" size={16} color={c.texteSecondaire} />
+        </View>
       </View>
 
-      {/* Stats rapides */}
+      {/* Pied de carte — stats visuellement contenues dans la carte */}
       <View style={{
         flexDirection: 'row',
-        marginTop: 14,
-        paddingTop: 12,
+        backgroundColor: c.fondBadge,
         borderTopWidth: 1,
         borderTopColor: c.bordure,
-        gap: 0,
+        paddingVertical: 10,
       }}>
         <StatMini label="Paris" valeur={paris.length} couleur="#3b82f6" />
+        <View style={{ width: 1, backgroundColor: c.bordure, marginVertical: 4 }} />
         <StatMini label="Terminés" valeur={parisTermines.length} couleur="#8b5cf6" />
+        <View style={{ width: 1, backgroundColor: c.bordure, marginVertical: 4 }} />
         <StatMini
           label="ROI"
           valeur={`${roi >= 0 ? '+' : ''}${roi.toFixed(1)}%`}
           couleur={roi >= 0 ? '#16a34a' : '#dc2626'}
         />
+        <View style={{ width: 1, backgroundColor: c.bordure, marginVertical: 4 }} />
         <StatMini label="Alertes" valeur={alertes.length} couleur="#f59e0b" />
       </View>
     </Pressable>
@@ -172,9 +176,9 @@ function CarteUtilisateur({ donnees, onPress, c }) {
 
 function StatMini({ label, valeur, couleur }) {
   return (
-    <View style={{ flex: 1, alignItems: 'center' }}>
-      <Text style={{ fontSize: 15, fontWeight: 'bold', color: couleur }}>{valeur}</Text>
-      <Text style={{ fontSize: 10, color: '#6b7280', marginTop: 1 }}>{label}</Text>
+    <View style={{ flex: 1, alignItems: 'center', paddingVertical: 2 }}>
+      <Text style={{ fontSize: 16, fontWeight: 'bold', color: couleur }}>{valeur}</Text>
+      <Text style={{ fontSize: 10, color: '#9ca3af', marginTop: 2, letterSpacing: 0.3 }}>{label}</Text>
     </View>
   )
 }

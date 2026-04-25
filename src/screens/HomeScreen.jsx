@@ -192,7 +192,7 @@ function CarteStatRapide({ titre, valeur, sousTexte, couleurValeur, icone, coule
   return contenu
 }
 
-// Mini card d'un pari récent
+// Carte d'un pari récent (header / body / footer résultat)
 function CartePariRecent({ pari, c, onPress }) {
   const cfg = CONFIG_STATUT[pari.statut] ?? CONFIG_STATUT.en_attente
   const emoji = emojiSportCompose(pari.sport)
@@ -204,49 +204,63 @@ function CartePariRecent({ pari, c, onPress }) {
       onPress={onPress}
       style={({ pressed }) => ({
         backgroundColor: c.fondCarte,
-        borderRadius: 14,
-        padding: 14,
-        marginBottom: 10,
+        borderRadius: 16,
+        marginBottom: 12,
         borderWidth: 1,
         borderColor: c.bordure,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
+        overflow: 'hidden',
         opacity: pressed ? 0.75 : 1,
       })}
     >
-      {/* Emoji sport */}
-      <View style={{
-        width: 40, height: 40, borderRadius: 12,
-        backgroundColor: c.fondBadge,
-        alignItems: 'center', justifyContent: 'center',
-      }}>
-        <Text style={{ fontSize: 20 }}>{emoji}</Text>
-      </View>
+      {/* Corps */}
+      <View style={{ padding: 14 }}>
+        {/* Ligne sport + compétition + date */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={{ fontSize: 16 }}>{emoji}</Text>
+            <Text style={{ fontSize: 12, color: c.texteSecondaire, fontWeight: '500' }} numberOfLines={1}>
+              {pari.competition || pari.sport || '—'}
+            </Text>
+          </View>
+          <Text style={{ fontSize: 12, color: c.texteSecondaire }}>{dateMatch}</Text>
+        </View>
 
-      {/* Infos match */}
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <Text
-          style={{ fontWeight: '600', color: c.texte, fontSize: 14 }}
-          numberOfLines={1}
-        >
+        {/* Rencontre */}
+        <Text style={{ fontSize: 15, fontWeight: 'bold', color: c.texte, marginBottom: 6 }} numberOfLines={1}>
           {pari.rencontre}
         </Text>
-        <Text style={{ fontSize: 12, color: c.texteSecondaire, marginTop: 1 }}>
-          {pari.valeur_pari} @ {pari.cote} — {dateMatch}
+
+        {/* Détails du pari */}
+        <Text style={{ fontSize: 12, color: c.texteSecondaire }} numberOfLines={1}>
+          {[pari.valeur_pari, `cote ${pari.cote}`, pari.mise != null ? `${pari.mise}€` : null]
+            .filter(Boolean).join('  ·  ')}
         </Text>
       </View>
 
-      {/* Statut + profit */}
-      <View style={{ alignItems: 'flex-end', gap: 4 }}>
-        <Ionicons name={cfg.icon} size={18} color={cfg.iconColor} />
-        {pari.statut !== 'en_attente' && (
-          <Text style={{
-            fontSize: 13, fontWeight: 'bold',
-            color: profitPerte >= 0 ? '#16a34a' : '#dc2626',
-          }}>
+      {/* Footer résultat */}
+      <View style={{
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: cfg.iconColor + '18',
+        borderTopWidth: 1,
+        borderTopColor: c.bordure,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+      }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Ionicons name={cfg.icon} size={15} color={cfg.iconColor} />
+          <Text style={{ fontSize: 13, fontWeight: '600', color: cfg.iconColor }}>
+            {cfg.label}
+          </Text>
+        </View>
+
+        {pari.statut !== 'en_attente' ? (
+          <Text style={{ fontSize: 14, fontWeight: 'bold', color: profitPerte >= 0 ? '#16a34a' : '#dc2626' }}>
             {profitPerte >= 0 ? '+' : ''}{profitPerte.toFixed(2)}€
           </Text>
+        ) : (
+          <Text style={{ fontSize: 12, color: c.texteSecondaire }}>Résultat à saisir</Text>
         )}
       </View>
     </Pressable>

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import * as SecureStore from 'expo-secure-store'
 import { useColorScheme } from 'nativewind'
+import { pb, mettreAJourThemeUtilisateur } from '../services/pocketbase'
 
 const CLE_THEME = '@betedge_theme'
 
@@ -54,26 +55,40 @@ export function ThemeProvider({ children }) {
   const { setColorScheme } = useColorScheme()
   const [estSombre, setEstSombre] = useState(false)
 
-  // Charger la préférence sauvegardée au démarrage
+  const appliquerTheme = (valeur) => {
+    const sombre = valeur === 'sombre'
+    setEstSombre(sombre)
+    setColorScheme(sombre ? 'dark' : 'light')
+  }
+
   useEffect(() => {
+    // Charger depuis SecureStore au démarrage (rapide, fonctionne hors-ligne)
     SecureStore.getItemAsync(CLE_THEME).then(valeur => {
-      if (valeur === 'sombre') {
-        setEstSombre(true)
-        setColorScheme('dark')
-      } else if (valeur === 'clair') {
-        setEstSombre(false)
-        setColorScheme('light')
-      }
+      if (valeur === 'sombre' || valeur === 'clair') appliquerTheme(valeur)
     }).catch(() => {})
+
+    // Synchroniser depuis PocketBase à chaque changement d'auth
+    // (connexion initiale, restauration de session, reconnexion)
+    const desabonner = pb.authStore.onChange((token, record) => {
+      if (!record?.theme) return
+      const themeServeur = record.theme
+      if (themeServeur !== 'sombre' && themeServeur !== 'clair') return
+      appliquerTheme(themeServeur)
+      SecureStore.setItemAsync(CLE_THEME, themeServeur).catch(() => {})
+    }, false)
+
+    return () => desabonner()
   }, [])
 
   const basculerTheme = async () => {
     const nouveau = !estSombre
+    const valeur = nouveau ? 'sombre' : 'clair'
     setEstSombre(nouveau)
     setColorScheme(nouveau ? 'dark' : 'light')
     try {
-      await SecureStore.setItemAsync(CLE_THEME, nouveau ? 'sombre' : 'clair')
+      await SecureStore.setItemAsync(CLE_THEME, valeur)
     } catch (_) {}
+    await mettreAJourThemeUtilisateur(valeur)
   }
 
   const c = estSombre ? PALETTE_SOMBRE : PALETTE_CLAIR

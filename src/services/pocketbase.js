@@ -116,6 +116,17 @@ export const getUrlAvatar = () => {
   return pb.files.getURL(user, user.avatar, { collection: 'users' })
 }
 
+export const mettreAJourThemeUtilisateur = async (theme) => {
+  try {
+    const userId = pb.authStore.record?.id
+    if (!userId) return
+    const utilisateurMisAJour = await pb.collection('users').update(userId, { theme })
+    pb.authStore.save(pb.authStore.token, utilisateurMisAJour)
+  } catch (error) {
+    console.error('mettreAJourThemeUtilisateur erreur:', error)
+  }
+}
+
 export const mettreAJourAvatar = async (fichierAvatar) => {
   try {
     const userId = pb.authStore.record?.id
@@ -166,6 +177,33 @@ export const getToutesLesDonneesAdmin = async () => {
   } catch (error) {
     console.error('getToutesLesDonneesAdmin erreur:', error)
     throw error
+  }
+}
+
+// ─── Palmarès — données multi-utilisateurs ────────────────────────────────────
+
+export const getParisPlateformePeriode = async (dateDebut, dateFin) => {
+  try {
+    return await pb.collection('paris').getFullList({
+      filter: `date_match >= "${dateDebut}" && date_match <= "${dateFin}"`,
+      sort: '-date_match',
+      expand: 'user',
+    })
+  } catch (error) {
+    console.error('getParisPlateformePeriode erreur:', error)
+    return []
+  }
+}
+
+export const getNbAlertesUtilisateurPeriode = async (userId, dateDebut, dateFin) => {
+  try {
+    const alertes = await pb.collection('alertes_bot').getFullList({
+      filter: `user = "${userId}" && telegram_envoye = true && date_match >= "${dateDebut}" && date_match <= "${dateFin}"`,
+    })
+    return alertes.length
+  } catch (error) {
+    console.error('getNbAlertesUtilisateurPeriode erreur:', error)
+    return 0
   }
 }
 
