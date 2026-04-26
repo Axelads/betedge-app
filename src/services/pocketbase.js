@@ -8,13 +8,11 @@ const pb = new PocketBase(process.env.EXPO_PUBLIC_PB_URL ?? 'https://unwilling-c
 
 export const ID_SUPERUSER = 'ujotze4rf8qhs9k'
 
-/**
- * Calcule le profit/perte en fonction du statut du pari.
- */
-const calculerProfitPerte = (statut, mise, cote) => {
+const calculerProfitPerte = (statut, mise, cote, montantCashout = null) => {
   if (statut === 'gagne') return (mise * cote) - mise
   if (statut === 'perdu') return -mise
-  return 0 // nul ou cashout (cashout saisi manuellement)
+  if (statut === 'cashout' && montantCashout != null) return montantCashout - mise
+  return 0 // nul ou cashout sans montant
 }
 
 export const creerPari = async (donnees) => {
@@ -29,10 +27,10 @@ export const creerPari = async (donnees) => {
   }
 }
 
-export const mettreAJourResultat = async (id, statut, scoreFinal) => {
+export const mettreAJourResultat = async (id, statut, scoreFinal, montantCashout = null) => {
   try {
     const pari = await pb.collection('paris').getOne(id)
-    const profitPerte = calculerProfitPerte(statut, pari.mise, pari.cote)
+    const profitPerte = calculerProfitPerte(statut, pari.mise, pari.cote, montantCashout)
     return await pb.collection('paris').update(id, {
       statut,
       score_final: scoreFinal,

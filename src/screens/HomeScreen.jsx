@@ -58,19 +58,33 @@ function ModaleResultat({ pari, visible, onFermer, onSauvegarde }) {
   const { c } = useTheme()
   const [statut, setStatut] = useState(pari?.statut !== 'en_attente' ? pari?.statut : 'gagne')
   const [score, setScore] = useState(pari?.score_final ?? '')
+  const [montantCashout, setMontantCashout] = useState('')
   const [chargement, setChargement] = useState(false)
 
   useEffect(() => {
     if (pari) {
       setStatut(pari.statut !== 'en_attente' ? pari.statut : 'gagne')
       setScore(pari.score_final ?? '')
+      if (pari.statut === 'cashout' && pari.profit_perte != null && pari.mise != null) {
+        setMontantCashout(String((pari.profit_perte + pari.mise).toFixed(2)))
+      } else {
+        setMontantCashout('')
+      }
     }
   }, [pari])
 
   const handleSauvegarder = async () => {
+    if (statut === 'cashout') {
+      const montant = parseFloat(montantCashout)
+      if (!montantCashout || isNaN(montant) || montant <= 0) {
+        Alert.alert('Montant requis', 'Saisis le montant récupéré lors du cashout.')
+        return
+      }
+    }
     setChargement(true)
     try {
-      await mettreAJourResultat(pari.id, statut, score)
+      const montantCashoutNum = statut === 'cashout' ? parseFloat(montantCashout) : null
+      await mettreAJourResultat(pari.id, statut, score, montantCashoutNum)
       onSauvegarde()
       onFermer()
     } catch (_) {
@@ -130,7 +144,7 @@ function ModaleResultat({ pari, visible, onFermer, onSauvegarde }) {
               borderRadius: 12,
               paddingHorizontal: 16,
               paddingVertical: 12,
-              marginBottom: 24,
+              marginBottom: statut === 'cashout' ? 12 : 24,
               color: c.texte,
             }}
             placeholder="2-1"
@@ -138,6 +152,31 @@ function ModaleResultat({ pari, visible, onFermer, onSauvegarde }) {
             value={score}
             onChangeText={setScore}
           />
+
+          {statut === 'cashout' && (
+            <>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: c.texteTertiaire, marginBottom: 8 }}>
+                Montant récupéré (€) *
+              </Text>
+              <TextInput
+                style={{
+                  backgroundColor: c.fondInput,
+                  borderWidth: 1,
+                  borderColor: c.bordure,
+                  borderRadius: 12,
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  marginBottom: 24,
+                  color: c.texte,
+                }}
+                placeholder="Ex : 8.50"
+                placeholderTextColor={c.textePlaceholder}
+                keyboardType="decimal-pad"
+                value={montantCashout}
+                onChangeText={setMontantCashout}
+              />
+            </>
+          )}
 
           <View style={{ flexDirection: 'row', gap: 12 }}>
             <Pressable
@@ -261,9 +300,15 @@ function CartePariRecent({ pari, c, onPress }) {
         </View>
 
         {pari.statut !== 'en_attente' ? (
-          <Text style={{ fontSize: 14, fontWeight: 'bold', color: profitPerte >= 0 ? '#16a34a' : '#dc2626' }}>
-            {profitPerte >= 0 ? '+' : ''}{profitPerte.toFixed(2)}€
-          </Text>
+          pari.statut === 'cashout' ? (
+            <Text style={{ fontSize: 14, fontWeight: 'bold', color: profitPerte >= 0 ? '#16a34a' : '#dc2626' }}>
+              Cashout : {(profitPerte + (pari.mise ?? 0)).toFixed(2)}€
+            </Text>
+          ) : (
+            <Text style={{ fontSize: 14, fontWeight: 'bold', color: profitPerte >= 0 ? '#16a34a' : '#dc2626' }}>
+              {profitPerte >= 0 ? '+' : ''}{profitPerte.toFixed(2)}€
+            </Text>
+          )
         ) : (
           <Text style={{ fontSize: 12, color: c.texteSecondaire }}>Résultat à saisir</Text>
         )}

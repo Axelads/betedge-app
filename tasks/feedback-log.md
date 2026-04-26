@@ -2,6 +2,19 @@
 
 ---
 
+## Traité le 2026-04-26
+
+### Option Cashout lors de la saisie de résultat
+
+- **Retour original :** "Ajouter une option "Cashout" quand on donne le résultat (Qui ajoute une case en plus du score avec le montant récupéré. Faire les calculs en conséquence et afficher la case soit en orange en toutes circonstances, soit en vert si le cashout est supérieur à la mise et en rouge s'il est inférieur à la mise, à toi de choisir)"
+- **Correction appliquée :** Quand l'utilisateur sélectionne "Cashout" dans la modale de saisie de résultat, un champ "Montant récupéré (€)" apparaît sous le score. Ce montant est obligatoire (validation avant sauvegarde). Le profit/perte est calculé automatiquement : `profit = montant_cashout - mise`. Les cartes de l'accueil et de l'historique affichent "Cashout : X.XX€" en vert si le montant récupéré est supérieur à la mise, en rouge s'il est inférieur. La pré-saisie fonctionne en mode modification (le montant cashout est reconstruit depuis `profit_perte + mise`).
+- **Fichiers modifiés :**
+  - `src/services/pocketbase.js` — `calculerProfitPerte()` : nouveau paramètre `montantCashout`; `mettreAJourResultat()` : nouveau paramètre `montantCashout`
+  - `src/screens/HomeScreen.jsx` — `ModaleResultat` : état `montantCashout`, validation, champ conditionnel; `CartePariRecent` : affichage "Cashout : X€" coloré
+  - `src/screens/BetHistoryScreen.jsx` — `ModaleResultat` : même logique; `LignePari` : affichage "Cashout : X€" coloré
+
+---
+
 ## Traité le 2026-04-25
 
 ### Multi-sélection de sports pour combinés multisports
