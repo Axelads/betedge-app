@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   View, Text, TextInput, Pressable,
   Alert, ActivityIndicator, ScrollView, Image,
@@ -8,6 +8,38 @@ import * as ImageManipulator from 'expo-image-manipulator'
 import { Ionicons } from '@expo/vector-icons'
 import { useTheme } from '../context/ThemeContext'
 import { getProfil, sauvegarderProfil, mettreAJourAvatar, getUrlAvatar, pb } from '../services/pocketbase'
+import { getCartesUtilisateur, TYPES_CARTES } from '../services/cartesFut'
+import CarteFUT from '../components/CarteFUT'
+import ModaleCarteFUT from '../components/ModaleCarteFUT'
+
+// ─── Cartes de démonstration (aperçu visuel sans paris réels) ────────────────
+
+const CARTES_DEMO = [
+  {
+    id: 'demo_or',
+    type: 'serie_or', couleur: 'or', titre: 'Série Légendaire', emoji: '🔥',
+    raison: '7 victoires consécutives — exemple de carte Or',
+    note: 92,
+    statistiques: { roi: 38, winRate: 78, serie: 7, coteMoyenne: 2.15, profit: 312, nbParis: 18 },
+    vue: false,
+  },
+  {
+    id: 'demo_argent',
+    type: 'roi_argent', couleur: 'argent', titre: 'Expert Rentable', emoji: '💹',
+    raison: 'ROI de +22% ce mois — exemple de carte Argent',
+    note: 78,
+    statistiques: { roi: 22, winRate: 64, serie: 4, coteMoyenne: 1.88, profit: 145, nbParis: 14 },
+    vue: false,
+  },
+  {
+    id: 'demo_bronze',
+    type: 'premier_gain', couleur: 'bronze', titre: 'Première Victoire', emoji: '⭐',
+    raison: 'Premier pari gagné — exemple de carte Bronze',
+    note: 65,
+    statistiques: { roi: 85, winRate: 100, serie: 1, coteMoyenne: 1.85, profit: 17, nbParis: 1 },
+    vue: false,
+  },
+]
 
 const SPORTS = [
   { valeur: 'football',   label: '⚽ Football' },
@@ -18,6 +50,10 @@ const SPORTS = [
 ]
 
 const PLATEFORMES = ['Winamax', 'Betclic', 'Unibet', 'Parions Sport']
+
+const SCALE_TROPHEE = 0.575  // cartes 126×189 dans la grille (220×330 × scale)
+
+const ORDRE_COULEUR = { or: 0, argent: 1, bronze: 2 }
 
 export default function ParametresScreen() {
   const { estSombre } = useTheme()
@@ -37,6 +73,11 @@ export default function ParametresScreen() {
   const [avatarUri, setAvatarUri] = useState(null)
   const [nouvelAvatar, setNouvelAvatar] = useState(null)
 
+  // Trophées FUT
+  const [cartes, setCartes] = useState([])
+  const [chargementCartes, setChargementCartes] = useState(false)
+  const [montrerDemo, setMontrerDemo] = useState(false)
+
   const c = {
     fond:      estSombre ? '#0f172a' : '#f8fafc',
     carte:     estSombre ? '#1e293b' : '#ffffff',
@@ -49,6 +90,23 @@ export default function ParametresScreen() {
     chipActif: estSombre ? '#1d4ed8' : '#dbeafe',
     chipTexte: estSombre ? '#93c5fd' : '#1d4ed8',
   }
+
+  const chargerCartes = useCallback(async () => {
+    setChargementCartes(true)
+    try {
+      const data = await getCartesUtilisateur()
+      const triees = [...data].sort((a, b) => {
+        const oa = ORDRE_COULEUR[a.couleur] ?? 3
+        const ob = ORDRE_COULEUR[b.couleur] ?? 3
+        return oa !== ob ? oa - ob : new Date(b.created) - new Date(a.created)
+      })
+      setCartes(triees)
+    } catch (err) {
+      console.error('chargerCartes erreur:', err)
+    } finally {
+      setChargementCartes(false)
+    }
+  }, [])
 
   useEffect(() => {
     const charger = async () => {
@@ -72,6 +130,7 @@ export default function ParametresScreen() {
       }
     }
     charger()
+    chargerCartes()
   }, [])
 
   const choisirPhoto = async () => {
@@ -160,6 +219,7 @@ export default function ParametresScreen() {
   }
 
   return (
+    <>
     <ScrollView style={{ flex: 1, backgroundColor: c.fond }} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
 
       {/* ── Avatar + identité ── */}
@@ -319,7 +379,7 @@ export default function ParametresScreen() {
       <Pressable
         onPress={handleSauvegarder}
         disabled={sauvegarde}
-        style={{ backgroundColor: c.accent, borderRadius: 12, padding: 16, alignItems: 'center', opacity: sauvegarde ? 0.6 : 1 }}
+        style={{ backgroundColor: c.accent, borderRadius: 12, padding: 16, alignItems: 'center', opacity: sauvegarde ? 0.6 : 1, marginBottom: 20 }}
       >
         {sauvegarde
           ? <ActivityIndicator color="#fff" />
@@ -332,7 +392,133 @@ export default function ParametresScreen() {
         }
       </Pressable>
 
+      {/* ── Mes Trophées FUT ── */}
+      <View style={{ marginBottom: 8 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Text style={{ fontSize: 20 }}>🎴</Text>
+            <Text style={{ color: c.texte, fontSize: 17, fontWeight: '800', letterSpacing: 0.3 }}>
+              Mes Trophées
+            </Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            {cartes.length > 0 && (
+              <View style={{
+                backgroundColor: estSombre ? '#1e3a5f' : '#dbeafe',
+                borderRadius:    10,
+                paddingHorizontal: 10,
+                paddingVertical:   3,
+              }}>
+                <Text style={{ color: estSombre ? '#93c5fd' : '#1d4ed8', fontSize: 12, fontWeight: '700' }}>
+                  {cartes.length} carte{cartes.length > 1 ? 's' : ''}
+                </Text>
+              </View>
+            )}
+            {/* Bouton démo */}
+            <Pressable
+              onPress={() => setMontrerDemo(true)}
+              style={({ pressed }) => ({
+                flexDirection:   'row',
+                alignItems:      'center',
+                gap:             4,
+                backgroundColor: pressed
+                  ? (estSombre ? '#7c3aed' : '#7c3aed')
+                  : (estSombre ? '#5b21b6' : '#ede9fe'),
+                borderRadius:    10,
+                paddingHorizontal: 10,
+                paddingVertical:   4,
+              })}
+            >
+              <Text style={{ fontSize: 11 }}>✨</Text>
+              <Text style={{ color: estSombre ? '#c4b5fd' : '#6d28d9', fontSize: 11, fontWeight: '700' }}>
+                Aperçu
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {chargementCartes ? (
+          <View style={{ alignItems: 'center', paddingVertical: 30 }}>
+            <ActivityIndicator color={c.accent} />
+          </View>
+        ) : cartes.length === 0 ? (
+          <View style={{
+            backgroundColor: c.carte,
+            borderRadius:    16,
+            padding:         28,
+            alignItems:      'center',
+            borderWidth:     1,
+            borderColor:     c.bordure,
+            borderStyle:     'dashed',
+          }}>
+            <Text style={{ fontSize: 36, marginBottom: 10 }}>🎴</Text>
+            <Text style={{ color: c.texte, fontSize: 15, fontWeight: '700', marginBottom: 6 }}>
+              Aucune carte pour l'instant
+            </Text>
+            <Text style={{ color: c.sec, fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
+              Gagne tes premiers paris et enchaîne des séries pour débloquer tes cartes FUT !
+            </Text>
+          </View>
+        ) : (
+          <View>
+            {/* Grille 2 colonnes */}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'flex-start' }}>
+              {cartes.map((carte) => {
+                const cardW = Math.round(220 * SCALE_TROPHEE)
+                const cardH = Math.round(330 * SCALE_TROPHEE)
+                return (
+                  <View
+                    key={carte.id}
+                    style={{ width: cardW, height: cardH }}
+                  >
+                    <CarteFUT
+                      carte={carte}
+                      avatarUrl={avatarUri}
+                      scale={SCALE_TROPHEE}
+                      animer={true}
+                    />
+                  </View>
+                )
+              })}
+            </View>
+
+            {/* Légende couleurs */}
+            <View style={{
+              flexDirection: 'row',
+              justifyContent: 'center',
+              gap: 16,
+              marginTop: 16,
+            }}>
+              {[
+                { couleur: 'or',     label: 'Or',     bg: '#c49200' },
+                { couleur: 'argent', label: 'Argent', bg: '#8080a0' },
+                { couleur: 'bronze', label: 'Bronze', bg: '#a06020' },
+              ].map(({ couleur, label, bg }) => {
+                const nb = cartes.filter(c2 => c2.couleur === couleur).length
+                if (nb === 0) return null
+                return (
+                  <View key={couleur} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: bg }} />
+                    <Text style={{ color: c.sec, fontSize: 11, fontWeight: '600' }}>
+                      {nb} {label}
+                    </Text>
+                  </View>
+                )
+              })}
+            </View>
+          </View>
+        )}
+      </View>
 
     </ScrollView>
+
+    {/* ── Modale démo cartes FUT ── */}
+    <ModaleCarteFUT
+      visible={montrerDemo}
+      cartes={CARTES_DEMO}
+      avatarUrl={avatarUri}
+      onFermer={() => setMontrerDemo(false)}
+    />
+    </>
   )
 }

@@ -22,8 +22,10 @@ import ParametresEcran from './src/screens/ParametresScreen'
 import AdminScreen from './src/screens/AdminScreen'
 import ModaleOnboarding from './src/components/ModaleOnboarding'
 import MopalePalmares from './src/components/MopalePalmares'
-import { pb, ID_SUPERUSER, getParisPlateformePeriode, getNbAlertesUtilisateurPeriode } from './src/services/pocketbase'
+import { pb, ID_SUPERUSER, getParisPlateformePeriode, getNbAlertesUtilisateurPeriode, getTousLesParis, getUrlAvatar } from './src/services/pocketbase'
 import { calculerROI, calculerTauxReussite } from './src/services/stats'
+import { evaluerNouvellesCartes, getCartesUtilisateur, getCartesNonVues, sauvegarderCarte } from './src/services/cartesFut'
+import ModaleCarteFUT from './src/components/ModaleCarteFUT'
 
 const Tab = createBottomTabNavigator()
 const CLE_PALMARES = 'betedge_palmares_'
@@ -259,15 +261,18 @@ function AppNavigateur() {
   const [montrerOnboarding, setMontrerOnboarding] = useState(false)
   const [montrerPalmares, setMontrerPalmares] = useState(false)
   const [donneesPalmares, setDonneesPalmares] = useState(null)
+  const [cartesFutNonVues, setCartesFutNonVues] = useState([])
+  const [montrerCartesFut, setMontrerCartesFut] = useState(false)
 
+  // Retourne true si le palmarès a été affiché
   const verifierPalmares = async () => {
     try {
       const maintenant = new Date()
-      if (maintenant.getDay() !== 1) return  // Seulement le lundi
+      if (maintenant.getDay() !== 1) return false  // Seulement le lundi
 
       const cleLundi = `${CLE_PALMARES}${maintenant.toISOString().substring(0, 10)}`
       const dejaVu = await SecureStore.getItemAsync(cleLundi)
-      if (dejaVu) return
+      if (dejaVu) return false
 
       const periodes = obtenirPeriodes()
       const [parisSemaine, parisMois] = await Promise.all([
@@ -278,7 +283,7 @@ function AppNavigateur() {
       const meilleurSemaine = trouverMeilleurParieur(grouperParUtilisateur(parisSemaine))
       const meilleurMois = trouverMeilleurParieur(grouperParUtilisateur(parisMois))
 
-      if (!meilleurSemaine && !meilleurMois) return
+      if (!meilleurSemaine && !meilleurMois) return false
 
       let donneesMois = formaterDonneesParieur(meilleurMois, periodes.mois)
       if (donneesMois) {
@@ -294,21 +299,54 @@ function AppNavigateur() {
         mois: donneesMois,
       })
       setMontrerPalmares(true)
+      return true
     } catch (err) {
       console.error('verifierPalmares erreur:', err)
+      return false
+    }
+  }
+
+  const verifierCartesFut = async () => {
+    try {
+      const [allParis, cartesExistantes] = await Promise.all([
+        getTousLesParis(),
+        getCartesUtilisateur(),
+      ])
+
+      // Évaluer les nouvelles cartes méritées
+      const nouvelles = evaluerNouvellesCartes(allParis, cartesExistantes)
+
+      // Sauvegarder les nouvelles cartes en parallèle
+      if (nouvelles.length > 0) {
+        await Promise.all(nouvelles.map(c => sauvegarderCarte(c)))
+      }
+
+      // Charger toutes les cartes non vues (nouvelles + anciennes non vues)
+      const nonVues = await getCartesNonVues()
+      if (nonVues.length > 0) {
+        setCartesFutNonVues(nonVues)
+        setMontrerCartesFut(true)
+      }
+    } catch (err) {
+      console.error('verifierCartesFut erreur:', err)
     }
   }
 
   useEffect(() => {
     if (!estConnecte) return
-    SecureStore.getItemAsync(CLE_ONBOARDING).then(valeur => {
+    SecureStore.getItemAsync(CLE_ONBOARDING).then(async valeur => {
       if (!valeur) {
         setMontrerOnboarding(true)
-        // Pas de palmarès pour un nouvel utilisateur (onboarding prioritaire)
+        // Pas de palmarès ni de cartes FUT pour un nouvel utilisateur (onboarding prioritaire)
       } else {
-        verifierPalmares()
+        const palmaresAffiche = await verifierPalmares()
+        // Si palmarès affiché → les cartes FUT s'afficheront après sa fermeture (via fermerPalmares)
+        // Sinon → les cartes FUT s'affichent immédiatement
+        if (!palmaresAffiche) verifierCartesFut()
       }
-    }).catch(() => { verifierPalmares() })
+    }).catch(() => {
+      verifierPalmares().then(aff => { if (!aff) verifierCartesFut() })
+    })
   }, [estConnecte])
 
   const fermerOnboarding = async () => {
@@ -316,6 +354,12 @@ function AppNavigateur() {
       await SecureStore.setItemAsync(CLE_ONBOARDING, 'oui')
     } catch (_) {}
     setMontrerOnboarding(false)
+  }
+
+  const fermerPalmares = () => {
+    setMontrerPalmares(false)
+    // Après la fermeture du palmarès, vérifier les cartes FUT
+    verifierCartesFut()
   }
 
   if (chargementInitial) {
@@ -336,9 +380,15 @@ function AppNavigateur() {
       <ModaleOnboarding visible={montrerOnboarding} onFermer={fermerOnboarding} />
       <MopalePalmares
         visible={montrerPalmares}
-        onFermer={() => setMontrerPalmares(false)}
+        onFermer={fermerPalmares}
         donnees={donneesPalmares}
         currentUserId={pb.authStore.record?.id}
+      />
+      <ModaleCarteFUT
+        visible={montrerCartesFut}
+        cartes={cartesFutNonVues}
+        avatarUrl={getUrlAvatar()}
+        onFermer={() => setMontrerCartesFut(false)}
       />
     </>
   )
