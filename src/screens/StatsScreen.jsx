@@ -67,6 +67,8 @@ const LABEL_TAG = {
   instinct:                'Instinct',
 }
 
+const MOIS_LABELS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.']
+
 // ─── Barre horizontale ───────────────────────────────────────────────────────
 
 function BarreROI({ label, roi, nombreParis, maxAbsROI, c }) {
@@ -210,6 +212,7 @@ export default function StatsScreen() {
   const [chargement, setChargement] = useState(true)
   const [modalePartageVisible, setModalePartageVisible] = useState(false)
   const [enCoursCapture, setEnCoursCapture] = useState(false)
+  const [moisDebutHistorique, setMoisDebutHistorique] = useState(null)
   const carteRef = useRef(null)
 
   const chargerDonnees = useCallback(async () => {
@@ -278,6 +281,17 @@ export default function StatsScreen() {
   const historiqueBankroll = calculerHistoriqueBankroll(
     [...parisTermines].sort((a, b) => new Date(a.created) - new Date(b.created))
   )
+
+  const optionsMoisHistorique = [null, ...[...new Set(
+    parisTermines.map(p => p.date_match?.slice(0, 7)).filter(Boolean)
+  )].sort()]
+  const indexMoisActuel = optionsMoisHistorique.indexOf(moisDebutHistorique)
+  const parisHistoriqueFiltre = moisDebutHistorique
+    ? parisTermines.filter(p => p.date_match && p.date_match.slice(0, 7) >= moisDebutHistorique)
+    : parisTermines
+  const historiqueBankrollAffiche = moisDebutHistorique
+    ? calculerHistoriqueBankroll([...parisHistoriqueFiltre].sort((a, b) => new Date(a.created) - new Date(b.created)))
+    : historiqueBankroll
 
   // Calcul du nb de paris par sport/type pour les barres
   const nbParSport = {}
@@ -361,15 +375,52 @@ export default function StatsScreen() {
       {historiqueBankroll.length >= 2 && (
         <Carte c={c}>
           <SectionTitre icone="trending-up-outline" titre="Évolution du profit" c={c} />
-          <CourbeSimplifiee historique={historiqueBankroll} c={c} />
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
-            <Text style={{ fontSize: 11, color: c.texteSecondaire }}>
-              Début : {historiqueBankroll[0].bankroll >= 0 ? '+' : ''}{historiqueBankroll[0].bankroll.toFixed(2)}€
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <Pressable
+              onPress={() => {
+                if (indexMoisActuel > 0) setMoisDebutHistorique(optionsMoisHistorique[indexMoisActuel - 1])
+              }}
+              disabled={indexMoisActuel <= 0}
+              style={({ pressed }) => ({ opacity: indexMoisActuel <= 0 ? 0.3 : pressed ? 0.6 : 1, padding: 4 })}
+            >
+              <Ionicons name="chevron-back" size={18} color={c.texte} />
+            </Pressable>
+            <Text style={{ fontSize: 12, color: c.texteSecondaire, fontWeight: '500' }}>
+              {!moisDebutHistorique
+                ? 'Tout'
+                : `Depuis ${MOIS_LABELS[parseInt(moisDebutHistorique.split('-')[1], 10) - 1]} ${moisDebutHistorique.split('-')[0]}`
+              }
             </Text>
-            <Text style={{ fontSize: 11, color: c.texteSecondaire }}>
-              Maintenant : {historiqueBankroll.at(-1).bankroll >= 0 ? '+' : ''}{historiqueBankroll.at(-1).bankroll.toFixed(2)}€
-            </Text>
+            <Pressable
+              onPress={() => {
+                if (indexMoisActuel < optionsMoisHistorique.length - 1) setMoisDebutHistorique(optionsMoisHistorique[indexMoisActuel + 1])
+              }}
+              disabled={indexMoisActuel >= optionsMoisHistorique.length - 1}
+              style={({ pressed }) => ({ opacity: indexMoisActuel >= optionsMoisHistorique.length - 1 ? 0.3 : pressed ? 0.6 : 1, padding: 4 })}
+            >
+              <Ionicons name="chevron-forward" size={18} color={c.texte} />
+            </Pressable>
           </View>
+          {historiqueBankrollAffiche.length >= 2
+            ? (
+              <>
+                <CourbeSimplifiee historique={historiqueBankrollAffiche} c={c} />
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
+                  <Text style={{ fontSize: 11, color: c.texteSecondaire }}>
+                    Début : {historiqueBankrollAffiche[0].bankroll >= 0 ? '+' : ''}{historiqueBankrollAffiche[0].bankroll.toFixed(2)}€
+                  </Text>
+                  <Text style={{ fontSize: 11, color: c.texteSecondaire }}>
+                    Maintenant : {historiqueBankrollAffiche.at(-1).bankroll >= 0 ? '+' : ''}{historiqueBankrollAffiche.at(-1).bankroll.toFixed(2)}€
+                  </Text>
+                </View>
+              </>
+            )
+            : (
+              <Text style={{ fontSize: 13, color: c.texteSecondaire, textAlign: 'center', paddingVertical: 16 }}>
+                Pas assez de paris pour cette période
+              </Text>
+            )
+          }
         </Carte>
       )}
 

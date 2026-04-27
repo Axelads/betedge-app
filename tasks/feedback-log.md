@@ -2,6 +2,17 @@
 
 ---
 
+## Traité le 2026-04-27
+
+### Filtre par mois dans "Évolution du profit"
+
+- **Retour original :** "À terme, avoir la possibilité dans les stats de cliquer sur la case 'Évolution du profit' pour voir depuis tel ou tel mois sa performance"
+- **Correction appliquée :** La carte "Évolution du profit" dans StatsScreen affiche désormais une barre de navigation mois (chevrons ← →) entre le titre et le graphique. Par défaut : "Tout" (toute la période). En naviguant avec les chevrons, le label passe à "Depuis [mois] [année]" et le graphique se recalcule à partir de ce mois jusqu'à aujourd'hui, en repartant de 0€ (performance relative). Les flèches sont grisées aux extrêmes (impossible d'aller avant le premier mois ou après le plus récent). Le graphique affiche "Pas assez de paris pour cette période" si le filtre ne retient qu'un seul pari. La carte de partage utilise toujours l'historique global (non filtré).
+- **Fichiers modifiés :**
+  - `src/screens/StatsScreen.jsx` — constante `MOIS_LABELS`, état `moisDebutHistorique`, variables dérivées `optionsMoisHistorique` / `indexMoisActuel` / `parisHistoriqueFiltre` / `historiqueBankrollAffiche`, UI de la section "Évolution du profit" avec navigation chevrons
+
+---
+
 ## Traité le 2026-04-26
 
 ### Option Cashout lors de la saisie de résultat
