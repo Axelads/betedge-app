@@ -180,7 +180,7 @@ function NavigateurPrincipal({ onOuvrirInfo }) {
           headerTitle: () => (
             <Image
               source={LOGO_ECRITURE}
-              style={{ height: 48, width: 220, resizeMode: 'contain' }}
+              style={{ height: 56, width: 260, resizeMode: 'contain' }}
             />
           ),
           headerLeft: () => <BoutonDeconnexion />,

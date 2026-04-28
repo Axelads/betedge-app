@@ -341,7 +341,7 @@ export default function HomeScreen({ navigation }) {
   }
 
   // Recharger à chaque fois que l'écran devient actif
-  useFocusEffect(chargerDonnees)
+  useFocusEffect(useCallback(() => { chargerDonnees() }, [chargerDonnees]))
 
   // ── Calculs ─────────────────────────────────────────────────────────────────
   const parisTermines = paris.filter(p => p.statut !== 'en_attente')

@@ -3,6 +3,7 @@ import {
   View, Text, FlatList, Pressable, Modal, TextInput, Alert, ActivityIndicator
 } from 'react-native'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
+import { useFocusEffect } from '@react-navigation/native'
 import { getTousLesParis, mettreAJourResultat } from '../services/pocketbase'
 import { useTheme } from '../context/ThemeContext'
 
@@ -252,7 +253,7 @@ export default function HistoriqueParis({ route }) {
     }
   }, [])
 
-  useEffect(() => { chargerParis() }, [chargerParis])
+  useFocusEffect(useCallback(() => { chargerParis() }, [chargerParis]))
 
   const handleResultat = (pari) => {
     setPariSelectionne(pari)

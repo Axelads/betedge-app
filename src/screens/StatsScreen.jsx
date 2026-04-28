@@ -226,7 +226,7 @@ export default function StatsScreen() {
     }
   }, [])
 
-  useFocusEffect(chargerDonnees)
+  useFocusEffect(useCallback(() => { chargerDonnees() }, [chargerDonnees]))
 
   const capturerEtPartager = async () => {
     try {
