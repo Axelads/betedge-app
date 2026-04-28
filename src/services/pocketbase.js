@@ -205,4 +205,15 @@ export const getNbAlertesUtilisateurPeriode = async (userId, dateDebut, dateFin)
   }
 }
 
+// ─── Préférences bot ─────────────────────────────────────────────────────────
+
+export const sauvegarderPreferencesBot = async (preferences) => {
+  return sauvegarderProfil({ preferences_bot: preferences })
+}
+
+export const getPreferencesBot = async () => {
+  const profil = await getProfil()
+  return profil?.preferences_bot ?? null
+}
+
 export { pb, calculerProfitPerte }

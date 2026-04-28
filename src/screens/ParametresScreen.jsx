@@ -7,7 +7,8 @@ import * as ImagePicker from 'expo-image-picker'
 import * as ImageManipulator from 'expo-image-manipulator'
 import { Ionicons } from '@expo/vector-icons'
 import { useTheme } from '../context/ThemeContext'
-import { getProfil, sauvegarderProfil, mettreAJourAvatar, getUrlAvatar, pb } from '../services/pocketbase'
+import { getProfil, sauvegarderProfil, mettreAJourAvatar, getUrlAvatar, getPreferencesBot, pb } from '../services/pocketbase'
+import ModalePreferencesBot from '../components/ModalePreferencesBot'
 import { getCartesUtilisateur, TYPES_CARTES } from '../services/cartesFut'
 import CarteFUT from '../components/CarteFUT'
 import ModaleCarteFUT from '../components/ModaleCarteFUT'
@@ -74,6 +75,10 @@ export default function ParametresScreen() {
   const [avatarUri, setAvatarUri] = useState(null)
   const [nouvelAvatar, setNouvelAvatar] = useState(null)
 
+  // Préférences bot
+  const [preferencesBot, setPreferencesBot] = useState(null)
+  const [modalePrefsVisible, setModalePrefsVisible] = useState(false)
+
   // Trophées FUT
   const [cartes, setCartes] = useState([])
   const [chargementCartes, setChargementCartes] = useState(false)
@@ -125,6 +130,8 @@ export default function ParametresScreen() {
           const urlAvatar = getUrlAvatar(profil)
           if (urlAvatar) setAvatarUri(urlAvatar)
         }
+        const prefs = await getPreferencesBot()
+        setPreferencesBot(prefs)
       } catch (erreur) {
         console.error('Erreur chargement profil:', erreur)
       } finally {
@@ -377,6 +384,43 @@ export default function ParametresScreen() {
         </Pressable>
       </View>
 
+      {/* ── Paramètres du bot ── */}
+      <Pressable
+        onPress={() => setModalePrefsVisible(true)}
+        style={({ pressed }) => ({
+          backgroundColor: pressed ? (estSombre ? '#1a2744' : '#e0edff') : c.carte,
+          borderRadius: 16, padding: 16, marginBottom: 16,
+          borderWidth: 1, borderColor: preferencesBot ? c.accent : c.bordure,
+          flexDirection: 'row', alignItems: 'center', gap: 14,
+        })}
+      >
+        <View style={{
+          width: 44, height: 44, borderRadius: 12,
+          backgroundColor: preferencesBot
+            ? (estSombre ? '#1d4ed8' : '#dbeafe')
+            : c.chip,
+          alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Ionicons
+            name={preferencesBot ? 'settings' : 'settings-outline'}
+            size={22}
+            color={preferencesBot ? c.accent : c.sec}
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: c.texte, fontSize: 15, fontWeight: '700', marginBottom: 2 }}>
+            Paramètres du bot
+          </Text>
+          <Text style={{ color: c.sec, fontSize: 12, lineHeight: 17 }}>
+            {preferencesBot
+              ? `${(preferencesBot.sports ?? []).join(', ')} · ${preferencesBot.profil_risque ?? 'équilibré'} · ${preferencesBot.source_donnees === 'communaute' ? 'Communauté' : 'Mes paris'}`
+              : 'Non configuré — Personnalise les alertes du bot'
+            }
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={c.sec} />
+      </Pressable>
+
       {/* ── Bouton Enregistrer global ── */}
       <Pressable
         onPress={handleSauvegarder}
@@ -541,6 +585,16 @@ export default function ParametresScreen() {
       </View>
 
     </ScrollView>
+
+    {/* ── Modale préférences bot ── */}
+    <ModalePreferencesBot
+      visible={modalePrefsVisible}
+      preferencesInitiales={preferencesBot}
+      onFermer={(nouvellesPrefs) => {
+        setModalePrefsVisible(false)
+        if (nouvellesPrefs) setPreferencesBot(nouvellesPrefs)
+      }}
+    />
 
     {/* ── Modale démo cartes FUT ── */}
     <ModaleCarteFUT
