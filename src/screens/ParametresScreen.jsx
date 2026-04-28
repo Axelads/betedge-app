@@ -11,6 +11,7 @@ import { getProfil, sauvegarderProfil, mettreAJourAvatar, getUrlAvatar, pb } fro
 import { getCartesUtilisateur, TYPES_CARTES } from '../services/cartesFut'
 import CarteFUT from '../components/CarteFUT'
 import ModaleCarteFUT from '../components/ModaleCarteFUT'
+import CartePersoScreen from './CartePersoScreen'
 
 // ─── Cartes de démonstration (aperçu visuel sans paris réels) ────────────────
 
@@ -77,6 +78,7 @@ export default function ParametresScreen() {
   const [cartes, setCartes] = useState([])
   const [chargementCartes, setChargementCartes] = useState(false)
   const [montrerDemo, setMontrerDemo] = useState(false)
+  const [montrerCartePerso, setMontrerCartePerso] = useState(false)
 
   const c = {
     fond:      estSombre ? '#0f172a' : '#f8fafc',
@@ -392,6 +394,34 @@ export default function ParametresScreen() {
         }
       </Pressable>
 
+      {/* ── Créer ma carte personnalisée ── */}
+      <Pressable
+        onPress={() => setMontrerCartePerso(true)}
+        style={({ pressed }) => ({
+          backgroundColor: pressed ? (estSombre ? '#1e3a5f' : '#e0edff') : c.carte,
+          borderRadius: 16, padding: 16, marginBottom: 16,
+          borderWidth: 1, borderColor: c.accent,
+          flexDirection: 'row', alignItems: 'center', gap: 14,
+        })}
+      >
+        <View style={{
+          width: 44, height: 44, borderRadius: 12,
+          backgroundColor: estSombre ? '#1d4ed8' : '#dbeafe',
+          alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Ionicons name="color-palette-outline" size={24} color={c.accent} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: c.texte, fontSize: 15, fontWeight: '700', marginBottom: 2 }}>
+            Créer ma carte
+          </Text>
+          <Text style={{ color: c.sec, fontSize: 12, lineHeight: 17 }}>
+            Personnalise et partage ta carte aux couleurs de ton équipe
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={c.sec} />
+      </Pressable>
+
       {/* ── Mes Trophées FUT ── */}
       <View style={{ marginBottom: 8 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
@@ -518,6 +548,11 @@ export default function ParametresScreen() {
       cartes={CARTES_DEMO}
       avatarUrl={avatarUri}
       onFermer={() => setMontrerDemo(false)}
+    />
+    <CartePersoScreen
+      visible={montrerCartePerso}
+      onFermer={() => setMontrerCartePerso(false)}
+      avatarUrl={avatarUri}
     />
     </>
   )

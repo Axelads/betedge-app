@@ -2,6 +2,19 @@
 
 ---
 
+## Traité le 2026-04-28
+
+### Carte FUT personnalisable dans les paramètres
+
+- **Retour original :** "créer dans les parametres la possibilité que l'utilisateur créé sa propre carte fut en clickant sur un onglet a part du parametre un autre screen qui se trouve dans les parametres en mettant ce qu'il veut en titre 3 mots maximums , en mettant son equipe preferé ( la carte prendra un degradé de couleur des couleurs officiels de son equipe preferé ) , possibilité de mettre les stats qu'il souhaite , je ne veux aucun emoji ca fait vraiment pas pro du tout , sur cette garde mon agent tu peux proposer ce que l'utilisateur peux remplir je te laisse le choix , et je veux qu'il puisse partager sa carte qu'il vient de personnaliser."
+- **Correction appliquée :** Ajout d'un bouton "Créer ma carte" dans ParametresScreen (entre le bouton "Enregistrer le profil" et la section Trophées). Ce bouton ouvre un écran plein format (Modal) `CartePersoScreen` proposant : (1) un champ titre limité à 3 mots avec compteur en temps réel, (2) un sélecteur d'équipe parmi 20 clubs populaires (PSG, OM, Real Madrid, Barça, Man. City, Liverpool, Arsenal, Chelsea, Bayern, Dortmund, Juventus, AC Milan, Inter, Atletico, Monaco, Lyon, Lille, Naples, Man. United, Tottenham) — la carte prend le dégradé des couleurs officielles du club sélectionné, (3) un sélecteur de stats à afficher (jusqu'à 6 parmi : ROI, Taux de victoire, Profit, Nb. paris, Meilleure série, Cote moyenne, Victoires, Mise moyenne) avec compteur 6/6, (4) un aperçu live de la carte au format FUT sans aucun emoji (la carte affiche "PERSO" et "BETEDGE" à la place des labels emoji du modèle standard), (5) un bouton "Partager ma carte" qui capture la carte via react-native-view-shot (pixelRatio 3x pour haute qualité) puis ouvre le partage natif via expo-sharing. La note de la carte (50-99) est calculée automatiquement à partir du ROI, du taux de victoire et du nombre de paris réels de l'utilisateur.
+- **Fichiers modifiés :**
+  - `src/components/CarteFUTPerso.jsx` — nouveau composant SVG carte FUT sans emoji, dégradé par équipe, stats dynamiques, shimmer animé
+  - `src/screens/CartePersoScreen.jsx` — nouvel écran Modal avec formulaire (titre, équipe, stats), aperçu live, bouton partage
+  - `src/screens/ParametresScreen.jsx` — import CartePersoScreen, état montrerCartePerso, bouton "Créer ma carte", rendu CartePersoScreen
+
+---
+
 ## Traité le 2026-04-27
 
 ### Filtre par mois dans "Évolution du profit"
