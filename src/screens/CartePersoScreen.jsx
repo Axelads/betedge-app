@@ -103,7 +103,7 @@ export default function CartePersoScreen({ visible, onFermer, avatarUrl }) {
 
   useEffect(() => {
     if (visible) chargerStats()
-  }, [visible])
+  }, [visible, chargerStats])
 
   const handleChangeTitre = (val) => {
     const mots = val.trim().split(/\s+/).filter(Boolean)
