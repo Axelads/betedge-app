@@ -9,6 +9,7 @@ import { captureRef } from 'react-native-view-shot'
 import * as Sharing from 'expo-sharing'
 import { LinearGradient } from 'expo-linear-gradient'
 import { getTousLesParis } from '../services/pocketbase'
+import { useAbonnement } from '../context/AbonnementContext'
 import {
   calculerROI,
   calculerTauxReussite,
@@ -208,6 +209,7 @@ function CourbeSimplifiee({ historique, c }) {
 
 export default function StatsScreen() {
   const { c } = useTheme()
+  const { estPremium, ouvrirPaywall } = useAbonnement()
   const [paris, setParis] = useState([])
   const [chargement, setChargement] = useState(true)
   const [modalePartageVisible, setModalePartageVisible] = useState(false)
@@ -371,8 +373,32 @@ export default function StatsScreen() {
         </View>
       </View>
 
+      {/* ── Gate Premium — sections avancées ───────────────────────────────── */}
+      {!estPremium && (
+        <Pressable
+          onPress={ouvrirPaywall}
+          style={({ pressed }) => ({
+            backgroundColor: pressed ? '#1e3a8a' : '#1e40af',
+            borderRadius: 16, padding: 20, marginBottom: 14,
+            alignItems: 'center', gap: 10,
+            borderWidth: 1, borderColor: '#3b82f6',
+          })}
+        >
+          <Ionicons name="lock-closed" size={28} color="#fbbf24" />
+          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700', textAlign: 'center' }}>
+            Stats avancées — Premium uniquement
+          </Text>
+          <Text style={{ color: '#93c5fd', fontSize: 13, textAlign: 'center' }}>
+            ROI par sport · ROI par type de pari · Taux de réussite par confiance · Top tags · Courbe bankroll
+          </Text>
+          <View style={{ backgroundColor: '#fbbf24', borderRadius: 20, paddingHorizontal: 20, paddingVertical: 8, marginTop: 4 }}>
+            <Text style={{ color: '#1e3a8a', fontSize: 14, fontWeight: '800' }}>Débloquer — 9,99 €/mois</Text>
+          </View>
+        </Pressable>
+      )}
+
       {/* ── Évolution bankroll ──────────────────────────────────────────────── */}
-      {historiqueBankroll.length >= 2 && (
+      {estPremium && historiqueBankroll.length >= 2 && (
         <Carte c={c}>
           <SectionTitre icone="trending-up-outline" titre="Évolution du profit" c={c} />
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -425,7 +451,7 @@ export default function StatsScreen() {
       )}
 
       {/* ── ROI par sport ───────────────────────────────────────────────────── */}
-      <Carte c={c}>
+      {estPremium && <Carte c={c}>
         <SectionTitre icone="football-outline" titre="ROI par sport" c={c} />
         {sportsTriés.map(([sport, roi]) => (
           <BarreROI
@@ -437,10 +463,10 @@ export default function StatsScreen() {
             c={c}
           />
         ))}
-      </Carte>
+      </Carte>}
 
       {/* ── ROI par type de pari ────────────────────────────────────────────── */}
-      <Carte c={c}>
+      {estPremium && <Carte c={c}>
         <SectionTitre icone="pricetag-outline" titre="ROI par type de pari" c={c} />
         {typesTriés.map(([type, roi]) => (
           <BarreROI
@@ -452,10 +478,10 @@ export default function StatsScreen() {
             c={c}
           />
         ))}
-      </Carte>
+      </Carte>}
 
       {/* ── Taux de réussite par confiance ──────────────────────────────────── */}
-      <Carte c={c}>
+      {estPremium && <Carte c={c}>
         <SectionTitre icone="star-outline" titre="Win rate par confiance" c={c} />
         {[5, 4, 3, 2, 1].map(niveau => (
           <LigneConfiance
@@ -467,10 +493,10 @@ export default function StatsScreen() {
           />
         ))}
         <View style={{ marginTop: 4 }} />
-      </Carte>
+      </Carte>}
 
       {/* ── Top tags rentables ──────────────────────────────────────────────── */}
-      {topTags.length > 0 && (
+      {estPremium && topTags.length > 0 && (
         <Carte c={c}>
           <SectionTitre icone="bookmark-outline" titre="Tags les plus rentables" c={c} />
           {topTags.map(({ tag, roi, nombre }, idx) => (
@@ -514,9 +540,9 @@ export default function StatsScreen() {
       )}
     </ScrollView>
 
-    {/* ── Bouton flottant Partager ────────────────────────────────────────── */}
+    {/* ── Bouton flottant Partager (Premium uniquement) ──────────────────── */}
     <Pressable
-      onPress={() => setModalePartageVisible(true)}
+      onPress={() => estPremium ? setModalePartageVisible(true) : ouvrirPaywall()}
       style={({ pressed }) => ({
         position: 'absolute',
         bottom: 24,

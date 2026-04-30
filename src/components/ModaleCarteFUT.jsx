@@ -4,7 +4,7 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
-import Svg, { Defs, LinearGradient as SvgGradient, Stop, Path, Circle, ClipPath, Text as SvgText } from 'react-native-svg'
+import Svg, { Defs, LinearGradient as SvgGradient, Stop, Path, Circle, ClipPath, Text as SvgText, Rect } from 'react-native-svg'
 import CarteFUT from './CarteFUT'
 import { marquerCarteVue } from '../services/cartesFut'
 
@@ -48,25 +48,26 @@ function DosCarte() {
   return (
     <View style={{
       width: 220, height: 330,
-      shadowColor: '#4f6bef',
+      shadowColor: '#2a2420',
       shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.6,
+      shadowOpacity: 0.7,
       shadowRadius: 18,
       elevation: 16,
     }}>
       <Svg width={220} height={330} viewBox="0 0 220 330">
         <Defs>
           <SvgGradient id="dosBg" x1="0.2" y1="0" x2="0.8" y2="1">
-            <Stop offset="0%"   stopColor="#080e20" />
-            <Stop offset="50%"  stopColor="#0f2456" />
-            <Stop offset="100%" stopColor="#080e20" />
+            <Stop offset="0%"   stopColor="#1a1815" />
+            <Stop offset="40%"  stopColor="#2c2824" />
+            <Stop offset="70%"  stopColor="#33302a" />
+            <Stop offset="100%" stopColor="#1a1815" />
           </SvgGradient>
           <ClipPath id="dosForme">
             <Path d={FORME_DOS} />
           </ClipPath>
         </Defs>
 
-        {/* Fond écusson */}
+        {/* Fond gris-bois */}
         <Path d={FORME_DOS} fill="url(#dosBg)" />
 
         {/* Bordure intérieure */}
@@ -78,7 +79,7 @@ function DosCarte() {
             'Q 128,310 110,313 Q 92,310 77.5,316 Q 62.5,324 45,319',
             'Q 25.5,313 13,295 Q 4.5,280 2.5,254 L 2.5,23 Q 2.5,2.5 23,2.5 Z',
           ].join(' ')}
-          fill="none" stroke="#3b5bdb" strokeWidth="1.5" strokeOpacity="0.5"
+          fill="none" stroke="#484038" strokeWidth="1.5" strokeOpacity="0.5"
         />
 
         {/* Losanges décoratifs */}
@@ -86,19 +87,32 @@ function DosCarte() {
           { x: 20,  y: 50  }, { x: 160, y: 50  },
           { x: 20,  y: 130 }, { x: 160, y: 130 },
           { x: 20,  y: 210 }, { x: 160, y: 210 },
-          { x: 70,  y: 90  }, { x: 110, y: 170 },
+          { x: 70,  y: 90  },
         ].map((pos, i) => (
           <Path key={i}
             d={`M ${pos.x + 20},${pos.y} L ${pos.x + 40},${pos.y + 20} L ${pos.x + 20},${pos.y + 40} L ${pos.x},${pos.y + 20} Z`}
-            fill="none" stroke="#3b5bdb" strokeWidth="1" strokeOpacity="0.07"
+            fill="none" stroke="#4a4038" strokeWidth="1" strokeOpacity="0.08"
           />
         ))}
 
-        {/* Texte central */}
-        <SvgText x="110" y="160" fontSize="44" textAnchor="middle">🎴</SvgText>
-        <SvgText x="110" y="192" fontSize="18" fontWeight="900" fill="#4f80ef"
+        {/* ── Logo BetEdge SVG ── */}
+        {/* Halo extérieur */}
+        <Circle cx={110} cy={148} r={50} fill="none" stroke="#3a3530" strokeWidth="0.8" strokeOpacity="0.4" />
+        {/* Cercle principal */}
+        <Circle cx={110} cy={148} r={42} fill="#141210" />
+        <Circle cx={110} cy={148} r={42} fill="none" stroke="#524840" strokeWidth="1.8" />
+        {/* Anneau intérieur décoratif */}
+        <Circle cx={110} cy={148} r={36} fill="none" stroke="#3a3428" strokeWidth="0.7" strokeOpacity="0.5" />
+        {/* Monogramme B */}
+        <SvgText x="110" y="170" fontSize="52" fontWeight="900" fill="#9a8a78"
+          textAnchor="middle">B</SvgText>
+
+        {/* Séparateur */}
+        <Rect x={50} y={203} width={120} height={0.8} fill="#4a4540" opacity="0.7" />
+
+        <SvgText x="110" y="219" fontSize="16" fontWeight="900" fill="#4f80ef"
           textAnchor="middle" letterSpacing="3">BET EDGE</SvgText>
-        <SvgText x="110" y="207" fontSize="9" fill="#6b86c8"
+        <SvgText x="110" y="234" fontSize="8.5" fill="#6b86c8"
           textAnchor="middle" letterSpacing="1.5">Carte Trophée</SvgText>
       </Svg>
 
@@ -112,7 +126,7 @@ function DosCarte() {
         }}
       >
         <LinearGradient
-          colors={['transparent', 'rgba(100,140,255,0.22)', 'transparent']}
+          colors={['transparent', 'rgba(160,140,110,0.18)', 'transparent']}
           start={{ x: 0, y: 0.2 }} end={{ x: 1, y: 0.8 }}
           style={{ width: 220, height: 330 }}
         />

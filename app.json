@@ -6,8 +6,8 @@
     "scheme": "betedge",
     "orientation": "portrait",
     "icon": "./assets/icon_appstore_white.png",
-    "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/logo_ecriture_betedge.png",
       "resizeMode": "contain",
@@ -16,6 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.betedge.app",
+      "deploymentTarget": "16.0",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -34,7 +35,15 @@
     "plugins": [
       "@react-native-community/datetimepicker",
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "BetEdge accède à vos photos pour personnaliser votre avatar de profil.",
+          "cameraPermission": "BetEdge accède à votre caméra pour prendre une photo de profil."
+        }
+      ],
+      "expo-apple-authentication"
     ],
     "extra": {
       "eas": {

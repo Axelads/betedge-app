@@ -48,6 +48,7 @@ export const getParisgagnants = async () => {
     return await pb.collection('paris').getFullList({
       filter: `statut = "gagne" && user = "${userId}"`,
       sort: '-created',
+      requestKey: null,
     })
   } catch (error) {
     console.error('getParisgagnants erreur:', error)
@@ -61,6 +62,7 @@ export const getTousLesParis = async () => {
     const estAdmin = userId === ID_SUPERUSER
     return await pb.collection('paris').getFullList({
       sort: '-date_match,-created',
+      requestKey: null, // désactive l'auto-cancellation (évite les conflits au démarrage multi-écrans)
       ...(estAdmin ? {} : { filter: `user = "${userId}"` }),
     })
   } catch (error) {
@@ -75,6 +77,7 @@ export const getParisEnAttente = async () => {
     return await pb.collection('paris').getFullList({
       filter: `statut = "en_attente" && user = "${userId}"`,
       sort: '-date_match,-created',
+      requestKey: null,
     })
   } catch (error) {
     console.error('getParisEnAttente erreur:', error)
@@ -99,6 +102,7 @@ export const getProfil = async () => {
     if (!userId) return null
     const resultats = await pb.collection('profils').getFullList({
       filter: `user = "${userId}"`,
+      requestKey: null,
     })
     return resultats.length > 0 ? resultats[0] : null
   } catch (error) {
@@ -205,6 +209,20 @@ export const getNbAlertesUtilisateurPeriode = async (userId, dateDebut, dateFin)
   }
 }
 
+// ─── Abonnement Premium ───────────────────────────────────────────────────────
+
+export const sauvegarderStatutPremium = async (estPremium) => {
+  try {
+    const userId = pb.authStore.record?.id
+    if (!userId) return
+    const profil = await getProfil()
+    if (!profil) return
+    await pb.collection('profils').update(profil.id, { est_premium: estPremium })
+  } catch (error) {
+    console.error('sauvegarderStatutPremium erreur:', error)
+  }
+}
+
 // ─── Préférences bot ─────────────────────────────────────────────────────────
 
 export const sauvegarderPreferencesBot = async (preferences) => {
@@ -214,6 +232,38 @@ export const sauvegarderPreferencesBot = async (preferences) => {
 export const getPreferencesBot = async () => {
   const profil = await getProfil()
   return profil?.preferences_bot ?? null
+}
+
+// ─── Suppression compte (Apple App Store Guideline 5.1.1) ────────────────────
+// Prérequis PocketBase : deleteRule de la collection `users` doit contenir
+// `id = @request.auth.id` pour autoriser l'auto-suppression.
+
+export const supprimerCompteEtDonnees = async () => {
+  try {
+    const userId = pb.authStore.record?.id
+    if (!userId) throw new Error('Utilisateur non connecté')
+
+    const [paris, alertes, cartes] = await Promise.all([
+      pb.collection('paris').getFullList({ filter: `user = "${userId}"` }),
+      pb.collection('alertes_bot').getFullList({ filter: `user = "${userId}"` }),
+      pb.collection('cartes_fut').getFullList({ filter: `user = "${userId}"` }),
+    ])
+
+    await Promise.all([
+      ...paris.map(p => pb.collection('paris').delete(p.id)),
+      ...alertes.map(a => pb.collection('alertes_bot').delete(a.id)),
+      ...cartes.map(c => pb.collection('cartes_fut').delete(c.id)),
+    ])
+
+    const profil = await getProfil()
+    if (profil) await pb.collection('profils').delete(profil.id)
+
+    await pb.collection('users').delete(userId)
+    pb.authStore.clear()
+  } catch (error) {
+    console.error('supprimerCompteEtDonnees erreur:', error)
+    throw error
+  }
 }
 
 export { pb, calculerProfitPerte }

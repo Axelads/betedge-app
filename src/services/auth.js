@@ -1,6 +1,7 @@
 import * as WebBrowser from 'expo-web-browser'
 import * as SecureStore from 'expo-secure-store'
 import * as Linking from 'expo-linking'
+import * as AppleAuthentication from 'expo-apple-authentication'
 import { pb } from './pocketbase'
 
 const CLE_TOKEN = 'betedge_auth_token'
@@ -57,6 +58,49 @@ export const connexionGoogle = async (seSouvenir = true) => {
   } catch (error) {
     WebBrowser.dismissBrowser().catch(() => {})
     console.error('[Auth] connexionGoogle erreur:', error?.message || error)
+    throw error
+  }
+}
+
+/**
+ * Connexion Apple via Sign in with Apple (iOS uniquement).
+ * Flux natif : boîte de dialogue Apple → authorizationCode → PocketBase
+ * Requiert que le fournisseur "apple" soit configuré dans PocketBase admin.
+ */
+export const connexionApple = async (seSouvenir = true) => {
+  try {
+    const credential = await AppleAuthentication.signInAsync({
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
+    })
+
+    const nomComplet = [
+      credential.fullName?.givenName || '',
+      credential.fullName?.familyName || '',
+    ].filter(Boolean).join(' ')
+
+    const donneesAuth = await pb.collection('users').authWithOAuth2Code(
+      'apple',
+      credential.authorizationCode,
+      null,
+      URI_REDIRECTION,
+      // Données de profil à injecter uniquement à la création du compte
+      ...(nomComplet ? [{ name: nomComplet }] : []),
+    )
+
+    console.log('[Auth] Connexion Apple réussie:', pb.authStore.record?.email)
+
+    if (seSouvenir && pb.authStore.isValid) {
+      await SecureStore.setItemAsync(CLE_TOKEN, pb.authStore.token)
+      await SecureStore.setItemAsync(CLE_MODELE, JSON.stringify(pb.authStore.record))
+      await SecureStore.setItemAsync(CLE_SE_SOUVENIR, 'true')
+    }
+
+    return donneesAuth
+  } catch (error) {
+    console.error('[Auth] connexionApple erreur:', error?.message || error)
     throw error
   }
 }

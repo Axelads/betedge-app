@@ -6,7 +6,8 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
@@ -15,6 +16,7 @@
     "@react-navigation/bottom-tabs": "^7.15.9",
     "@react-navigation/native": "^7.2.2",
     "expo": "~55.0.17",
+    "expo-apple-authentication": "~55.0.13",
     "expo-image-manipulator": "~55.0.15",
     "expo-image-picker": "~55.0.19",
     "expo-linear-gradient": "~55.0.13",
@@ -27,6 +29,7 @@
     "pocketbase": "^0.26.8",
     "react": "19.2.0",
     "react-native": "0.83.6",
+    "react-native-iap": "^12.16.4",
     "react-native-safe-area-context": "~5.6.2",
     "react-native-screens": "~4.23.0",
     "react-native-sse": "^1.2.1",
@@ -36,6 +39,7 @@
   },
   "private": true,
   "devDependencies": {
-    "babel-preset-expo": "^55.0.17"
+    "babel-preset-expo": "^55.0.17",
+    "patch-package": "^8.0.1"
   }
 }

@@ -13,6 +13,8 @@ const CLE_ONBOARDING = 'betedge_onboarding_vu'
 
 import { ThemeProvider, useTheme } from './src/context/ThemeContext'
 import { FournisseurAuth, useAuth } from './src/context/AuthContext'
+import { FournisseurAbonnement, useAbonnement } from './src/context/AbonnementContext'
+import ModalePremium from './src/components/ModalePremium'
 import HomeScreen from './src/screens/HomeScreen'
 import NouveauPariEcran from './src/screens/NewBetScreen'
 import HistoriqueParis from './src/screens/BetHistoryScreen'
@@ -390,8 +392,15 @@ function AppNavigateur() {
         avatarUrl={getUrlAvatar()}
         onFermer={() => setMontrerCartesFut(false)}
       />
+      <PaywallConnecte />
     </>
   )
+}
+
+// Rendu du paywall en dehors de AppNavigateur pour éviter les conflits de navigation
+function PaywallConnecte() {
+  const { paywallVisible, fermerPaywall } = useAbonnement()
+  return <ModalePremium visible={paywallVisible} onFermer={fermerPaywall} />
 }
 
 export default function App() {
@@ -399,7 +408,9 @@ export default function App() {
     <SafeAreaProvider>
       <ThemeProvider>
         <FournisseurAuth>
-          <AppNavigateur />
+          <FournisseurAbonnement>
+            <AppNavigateur />
+          </FournisseurAbonnement>
         </FournisseurAuth>
       </ThemeProvider>
     </SafeAreaProvider>

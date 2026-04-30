@@ -7,7 +7,9 @@ import * as ImagePicker from 'expo-image-picker'
 import * as ImageManipulator from 'expo-image-manipulator'
 import { Ionicons } from '@expo/vector-icons'
 import { useTheme } from '../context/ThemeContext'
-import { getProfil, sauvegarderProfil, mettreAJourAvatar, getUrlAvatar, getPreferencesBot, pb } from '../services/pocketbase'
+import { getProfil, sauvegarderProfil, mettreAJourAvatar, getUrlAvatar, getPreferencesBot, supprimerCompteEtDonnees, pb } from '../services/pocketbase'
+import { useAbonnement } from '../context/AbonnementContext'
+import { useAuth } from '../context/AuthContext'
 import ModalePreferencesBot from '../components/ModalePreferencesBot'
 import { getCartesUtilisateur, TYPES_CARTES } from '../services/cartesFut'
 import CarteFUT from '../components/CarteFUT'
@@ -59,10 +61,13 @@ const ORDRE_COULEUR = { or: 0, argent: 1, bronze: 2 }
 
 export default function ParametresScreen() {
   const { estSombre } = useTheme()
+  const { seDeconnecter } = useAuth()
+  const { estPremium, ouvrirPaywall } = useAbonnement()
 
   const [chargement, setChargement] = useState(true)
   const [sauvegarde, setSauvegarde] = useState(false)
   const [testEnCours, setTestEnCours] = useState(false)
+  const [suppressionEnCours, setSuppressionEnCours] = useState(false)
   const [profilId, setProfilId] = useState(null)
 
   // Champs profil
@@ -186,6 +191,43 @@ export default function ParametresScreen() {
     } finally {
       setSauvegarde(false)
     }
+  }
+
+  const handleSupprimerCompte = () => {
+    Alert.alert(
+      'Supprimer mon compte',
+      'Cette action supprimera définitivement ton compte, tous tes paris, tes statistiques et tes trophées. Cette action est irréversible.',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Continuer',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Dernière confirmation',
+              'Toutes tes données seront effacées de nos serveurs. Es-tu certain ?',
+              [
+                { text: 'Annuler', style: 'cancel' },
+                {
+                  text: 'Supprimer définitivement',
+                  style: 'destructive',
+                  onPress: async () => {
+                    setSuppressionEnCours(true)
+                    try {
+                      await supprimerCompteEtDonnees()
+                      await seDeconnecter()
+                    } catch {
+                      setSuppressionEnCours(false)
+                      Alert.alert('Erreur', 'La suppression a échoué. Vérifie ta connexion et réessaie.')
+                    }
+                  },
+                },
+              ]
+            )
+          },
+        },
+      ]
+    )
   }
 
   const handleTester = async () => {
@@ -387,38 +429,75 @@ export default function ParametresScreen() {
       {/* ── Paramètres du bot ── */}
       <Pressable
         onPress={() => setModalePrefsVisible(true)}
-        style={({ pressed }) => ({
-          backgroundColor: pressed ? (estSombre ? '#1a2744' : '#e0edff') : c.carte,
-          borderRadius: 16, padding: 16, marginBottom: 16,
-          borderWidth: 1, borderColor: preferencesBot ? c.accent : c.bordure,
-          flexDirection: 'row', alignItems: 'center', gap: 14,
-        })}
+        style={[{ marginBottom: 16 }, ({ pressed }) => ({ opacity: pressed ? 0.78 : 1 })]}
       >
         <View style={{
-          width: 44, height: 44, borderRadius: 12,
-          backgroundColor: preferencesBot
-            ? (estSombre ? '#1d4ed8' : '#dbeafe')
-            : c.chip,
-          alignItems: 'center', justifyContent: 'center',
+          backgroundColor: c.carte,
+          borderRadius: 16, padding: 16,
+          borderWidth: 1, borderColor: preferencesBot ? c.accent : c.bordure,
+          flexDirection: 'row', alignItems: 'center', gap: 14,
         }}>
-          <Ionicons
-            name={preferencesBot ? 'settings' : 'settings-outline'}
-            size={22}
-            color={preferencesBot ? c.accent : c.sec}
-          />
+          <View style={{
+            width: 44, height: 44, borderRadius: 12,
+            backgroundColor: preferencesBot
+              ? (estSombre ? '#1d4ed8' : '#dbeafe')
+              : c.chip,
+            alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Ionicons
+              name={preferencesBot ? 'settings' : 'settings-outline'}
+              size={22}
+              color={preferencesBot ? c.accent : c.sec}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: c.texte, fontSize: 15, fontWeight: '700', marginBottom: 2 }}>
+              Paramètres du bot
+            </Text>
+            <Text style={{ color: c.sec, fontSize: 12, lineHeight: 17 }}>
+              {preferencesBot
+                ? `${(preferencesBot.sports ?? []).join(', ')} · ${preferencesBot.profil_risque ?? 'équilibré'} · ${preferencesBot.source_donnees === 'communaute' ? 'Communauté' : 'Mes paris'}`
+                : 'Non configuré — Personnalise les alertes du bot'
+              }
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={c.sec} />
         </View>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: c.texte, fontSize: 15, fontWeight: '700', marginBottom: 2 }}>
-            Paramètres du bot
-          </Text>
-          <Text style={{ color: c.sec, fontSize: 12, lineHeight: 17 }}>
-            {preferencesBot
-              ? `${(preferencesBot.sports ?? []).join(', ')} · ${preferencesBot.profil_risque ?? 'équilibré'} · ${preferencesBot.source_donnees === 'communaute' ? 'Communauté' : 'Mes paris'}`
-              : 'Non configuré — Personnalise les alertes du bot'
-            }
-          </Text>
+      </Pressable>
+
+      {/* ── Abonnement Premium ── */}
+      <Pressable
+        onPress={estPremium ? undefined : ouvrirPaywall}
+        style={[{ marginBottom: 16 }, ({ pressed }) => ({ opacity: pressed && !estPremium ? 0.78 : 1 })]}
+      >
+        <View style={{
+          backgroundColor: estPremium ? (estSombre ? '#1a2c1a' : '#f0fdf4') : c.carte,
+          borderRadius: 16, padding: 16,
+          borderWidth: 1.5,
+          borderColor: estPremium ? '#16a34a' : '#2563eb',
+          flexDirection: 'row', alignItems: 'center', gap: 14,
+        }}>
+          <View style={{
+            width: 44, height: 44, borderRadius: 12,
+            backgroundColor: estPremium ? '#16a34a20' : (estSombre ? '#1d4ed8' : '#dbeafe'),
+            alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Ionicons
+              name={estPremium ? 'checkmark-circle' : 'star'}
+              size={24}
+              color={estPremium ? '#16a34a' : '#fbbf24'}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: c.texte, fontSize: 15, fontWeight: '700', marginBottom: 2 }}>
+              {estPremium ? 'Abonnement Premium actif' : 'Passer à Premium'}
+            </Text>
+            <Text style={{ color: c.sec, fontSize: 12 }}>
+              {estPremium ? 'Toutes les fonctionnalités déverrouillées' : '9,99 €/mois · sans engagement'}
+            </Text>
+          </View>
+          {!estPremium && <Ionicons name="chevron-forward" size={20} color={c.sec} />}
         </View>
-        <Ionicons name="chevron-forward" size={20} color={c.sec} />
       </Pressable>
 
       {/* ── Bouton Enregistrer global ── */}
@@ -441,33 +520,35 @@ export default function ParametresScreen() {
       {/* ── Créer ma carte personnalisée ── */}
       <Pressable
         onPress={() => setMontrerCartePerso(true)}
-        style={({ pressed }) => ({
-          backgroundColor: pressed ? (estSombre ? '#1e3a5f' : '#e0edff') : c.carte,
-          borderRadius: 16, padding: 16, marginBottom: 16,
-          borderWidth: 1, borderColor: c.accent,
-          flexDirection: 'row', alignItems: 'center', gap: 14,
-        })}
+        style={[{ marginBottom: 16 }, ({ pressed }) => ({ opacity: pressed ? 0.78 : 1 })]}
       >
         <View style={{
-          width: 44, height: 44, borderRadius: 12,
-          backgroundColor: estSombre ? '#1d4ed8' : '#dbeafe',
-          alignItems: 'center', justifyContent: 'center',
+          backgroundColor: c.carte,
+          borderRadius: 16, padding: 16,
+          borderWidth: 1, borderColor: c.accent,
+          flexDirection: 'row', alignItems: 'center', gap: 14,
         }}>
-          <Ionicons name="color-palette-outline" size={24} color={c.accent} />
+          <View style={{
+            width: 44, height: 44, borderRadius: 12,
+            backgroundColor: estSombre ? '#1d4ed8' : '#dbeafe',
+            alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Ionicons name="color-palette-outline" size={24} color={c.accent} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: c.texte, fontSize: 15, fontWeight: '700', marginBottom: 2 }}>
+              Créer ma carte
+            </Text>
+            <Text style={{ color: c.sec, fontSize: 12, lineHeight: 17 }}>
+              Personnalise et partage ta carte aux couleurs de ton équipe
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={c.sec} />
         </View>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: c.texte, fontSize: 15, fontWeight: '700', marginBottom: 2 }}>
-            Créer ma carte
-          </Text>
-          <Text style={{ color: c.sec, fontSize: 12, lineHeight: 17 }}>
-            Personnalise et partage ta carte aux couleurs de ton équipe
-          </Text>
-        </View>
-        <Ionicons name="chevron-forward" size={20} color={c.sec} />
       </Pressable>
 
       {/* ── Mes Trophées FUT ── */}
-      <View style={{ marginBottom: 8 }}>
+      <View style={{ marginBottom: 8, marginTop: 8 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Text style={{ fontSize: 20 }}>🎴</Text>
@@ -491,17 +572,14 @@ export default function ParametresScreen() {
             {/* Bouton démo */}
             <Pressable
               onPress={() => setMontrerDemo(true)}
-              style={({ pressed }) => ({
-                flexDirection:   'row',
-                alignItems:      'center',
-                gap:             4,
-                backgroundColor: pressed
-                  ? (estSombre ? '#7c3aed' : '#7c3aed')
-                  : (estSombre ? '#5b21b6' : '#ede9fe'),
-                borderRadius:    10,
-                paddingHorizontal: 10,
-                paddingVertical:   4,
-              })}
+              style={[
+                {
+                  flexDirection: 'row', alignItems: 'center', gap: 4,
+                  backgroundColor: estSombre ? '#5b21b6' : '#ede9fe',
+                  borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4,
+                },
+                ({ pressed }) => ({ opacity: pressed ? 0.75 : 1 }),
+              ]}
             >
               <Text style={{ fontSize: 11 }}>✨</Text>
               <Text style={{ color: estSombre ? '#c4b5fd' : '#6d28d9', fontSize: 11, fontWeight: '700' }}>
@@ -536,7 +614,7 @@ export default function ParametresScreen() {
         ) : (
           <View>
             {/* Grille 2 colonnes */}
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'flex-start' }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
               {cartes.map((carte) => {
                 const cardW = Math.round(220 * SCALE_TROPHEE)
                 const cardH = Math.round(330 * SCALE_TROPHEE)
@@ -582,6 +660,41 @@ export default function ParametresScreen() {
             </View>
           </View>
         )}
+      </View>
+
+      {/* ── Supprimer mon compte ── */}
+      <View style={{ marginTop: 32, paddingTop: 24, borderTopWidth: 1, borderTopColor: c.bordure }}>
+        <Pressable
+          onPress={handleSupprimerCompte}
+          disabled={suppressionEnCours}
+          style={({ pressed }) => ({
+            opacity: suppressionEnCours ? 0.5 : pressed ? 0.65 : 1,
+          })}
+        >
+          <View style={{
+            borderRadius: 12,
+            borderWidth: 2,
+            borderColor: '#dc2626',
+            paddingVertical: 15,
+            paddingHorizontal: 20,
+          }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+              {suppressionEnCours ? (
+                <ActivityIndicator color="#dc2626" />
+              ) : (
+                <>
+                  <Ionicons name="trash-outline" size={19} color="#dc2626" />
+                  <Text style={{ color: '#dc2626', fontWeight: '700', fontSize: 15 }}>
+                    Supprimer mon compte et mes données
+                  </Text>
+                </>
+              )}
+            </View>
+          </View>
+        </Pressable>
+        <Text style={{ color: c.sec, fontSize: 11, textAlign: 'center', marginTop: 10, lineHeight: 16 }}>
+          Cette action est définitive et irréversible.
+        </Text>
       </View>
 
     </ScrollView>

@@ -6,6 +6,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
 import { getTousLesParis, mettreAJourResultat } from '../services/pocketbase'
 import { useTheme } from '../context/ThemeContext'
+import { useAbonnement } from '../context/AbonnementContext'
 
 const CONFIG_STATUT = {
   en_attente: { icon: 'time-outline',           iconColor: '#d97706', label: 'En attente', couleur: 'text-yellow-600', fond: 'bg-yellow-50 border-yellow-200',         fondSombre: 'dark:bg-yellow-900/30 dark:border-yellow-800' },
@@ -233,8 +234,11 @@ function LignePari({ pari, onResultat }) {
   )
 }
 
+const LIMITE_GRATUIT = 30
+
 export default function HistoriqueParis({ route }) {
   const { c } = useTheme()
+  const { estPremium, ouvrirPaywall } = useAbonnement()
   const [paris, setParis] = useState([])
   const [chargement, setChargement] = useState(true)
   const [pariSelectionne, setPariSelectionne] = useState(null)
@@ -261,6 +265,8 @@ export default function HistoriqueParis({ route }) {
   }
 
   const parisFiltres = filtre === 'tous' ? paris : paris.filter(p => p.statut === filtre)
+  const parisAffiches = estPremium ? parisFiltres : parisFiltres.slice(0, LIMITE_GRATUIT)
+  const parisSupplementaires = !estPremium && parisFiltres.length > LIMITE_GRATUIT
 
   if (chargement) {
     return (
@@ -313,10 +319,29 @@ export default function HistoriqueParis({ route }) {
         </View>
       ) : (
         <FlatList
-          data={parisFiltres}
+          data={parisAffiches}
           keyExtractor={item => item.id}
           renderItem={({ item }) => <LignePari pari={item} onResultat={handleResultat} />}
           showsVerticalScrollIndicator={false}
+          ListFooterComponent={parisSupplementaires ? (
+            <Pressable
+              onPress={ouvrirPaywall}
+              style={({ pressed }) => ({
+                backgroundColor: pressed ? '#1e3a8a' : '#1e40af',
+                borderRadius: 14, padding: 16, marginVertical: 12,
+                alignItems: 'center', gap: 6,
+                borderWidth: 1, borderColor: '#3b82f6',
+              })}
+            >
+              <Ionicons name="lock-closed-outline" size={22} color="#fbbf24" />
+              <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>
+                {parisFiltres.length - LIMITE_GRATUIT} paris supplémentaires
+              </Text>
+              <Text style={{ color: '#93c5fd', fontSize: 12 }}>
+                Historique illimité avec Premium — 9,99 €/mois
+              </Text>
+            </Pressable>
+          ) : null}
         />
       )}
 

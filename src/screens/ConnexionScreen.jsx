@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
@@ -7,12 +7,14 @@ import {
   ActivityIndicator,
   Alert,
   StatusBar,
+  Platform,
 } from 'react-native'
 import FooterSignature from '../components/FooterSignature'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
 import Svg, { Path } from 'react-native-svg'
-import { connexionGoogle } from '../services/auth'
+import * as AppleAuthentication from 'expo-apple-authentication'
+import { connexionGoogle, connexionApple } from '../services/auth'
 import { useAuth } from '../context/AuthContext'
 
 // Logo Google officiel (SVG multicolore)
@@ -31,7 +33,15 @@ const LOGO_ECRITURE = require('../../assets/logo_ecriture_betedge.png')
 export default function ConnexionScreen() {
   const { seConnecter } = useAuth()
   const [chargement, setChargement] = useState(false)
+  const [chargementApple, setChargementApple] = useState(false)
   const [seSouvenir, setSeSouvenir] = useState(true)
+  const [appleDisponible, setAppleDisponible] = useState(false)
+
+  useEffect(() => {
+    if (Platform.OS === 'ios') {
+      AppleAuthentication.isAvailableAsync().then(setAppleDisponible)
+    }
+  }, [])
 
   const gererConnexionGoogle = async () => {
     setChargement(true)
@@ -48,6 +58,24 @@ export default function ConnexionScreen() {
       }
     } finally {
       setChargement(false)
+    }
+  }
+
+  const gererConnexionApple = async () => {
+    setChargementApple(true)
+    try {
+      await connexionApple(seSouvenir)
+      seConnecter()
+    } catch (error) {
+      if (error.code !== 'ERR_REQUEST_CANCELED') {
+        Alert.alert(
+          'Erreur de connexion',
+          'Impossible de se connecter avec Apple. Réessayez.',
+          [{ text: 'OK' }]
+        )
+      }
+    } finally {
+      setChargementApple(false)
     }
   }
 
@@ -151,11 +179,12 @@ export default function ConnexionScreen() {
             Connectez-vous pour accéder à votre espace
           </Text>
 
-          {/* Bouton Google */}
-          <View style={{ alignItems: 'center' }}>
+          {/* Boutons de connexion */}
+          <View style={{ alignItems: 'center', gap: 12 }}>
+            {/* Bouton Google */}
             <Pressable
               onPress={gererConnexionGoogle}
-              disabled={chargement}
+              disabled={chargement || chargementApple}
               style={({ pressed }) => ({
                 backgroundColor: pressed ? '#f1f5f9' : '#ffffff',
                 borderRadius: 16,
@@ -170,7 +199,7 @@ export default function ConnexionScreen() {
                 shadowOpacity: 0.12,
                 shadowRadius: 8,
                 elevation: 4,
-                opacity: chargement ? 0.65 : 1,
+                opacity: (chargement || chargementApple) ? 0.65 : 1,
                 minWidth: 220,
               })}
             >
@@ -190,6 +219,17 @@ export default function ConnexionScreen() {
                 {chargement ? 'Connexion en cours…' : 'Continuer avec Google'}
               </Text>
             </Pressable>
+
+            {/* Bouton Sign in with Apple — affiché uniquement sur iOS 13+ */}
+            {appleDisponible && (
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                cornerRadius={16}
+                style={{ width: 220, height: 56 }}
+                onPress={gererConnexionApple}
+              />
+            )}
           </View>
 
           {/* Se souvenir de moi */}

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   View, Text, Pressable, Modal, ScrollView,
-  ActivityIndicator, SafeAreaView,
+  ActivityIndicator, SafeAreaView, useWindowDimensions,
 } from 'react-native'
 import Svg, { Path, Circle, Ellipse, Line, Polyline, Rect } from 'react-native-svg'
 import { Ionicons } from '@expo/vector-icons'
@@ -18,6 +18,9 @@ const PREFS_DEFAUT = {
   source_donnees: 'perso',
   consentement_donnees: true,
 }
+
+const PADDING_H = 20  // doit correspondre au padding du contentContainerStyle
+const CARD_GAP  = 10
 
 // ─── Icônes SVG ───────────────────────────────────────────────────────────────
 
@@ -164,246 +167,303 @@ const IcLock = ({ color, size = 44 }) => (
 )
 
 // ─── Composant carte option ───────────────────────────────────────────────────
+// Pressable = uniquement opacity au press + width.
+// View interne = tout le visuel (border, background, borderRadius).
+// React Native iOS ignore les bordures sur un Pressable avec style fonctionnel.
 
-const CarteOption = ({ Icone, titre, description, selectionne, onPress, c, couleurActive }) => {
+const CarteOption = ({ Icone, titre, description, selectionne, onPress, c, couleurActive, largeur }) => {
   const cA = couleurActive ?? '#3b82f6'
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => ({
-        backgroundColor: selectionne ? (cA + '15') : c.carte,
-        borderWidth: selectionne ? 2 : 1,
-        borderColor: selectionne ? cA : c.bordure,
-        borderRadius: 12,
-        padding: 14,
-        marginBottom: 10,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 14,
-        opacity: pressed ? 0.85 : 1,
-      })}
+      style={({ pressed }) => ({ opacity: pressed ? 0.78 : 1 })}
     >
+      {/* width sur la View — jamais sur le style fonctionnel du Pressable (ignoré sur iOS) */}
       <View style={{
-        width: 46, height: 46, borderRadius: 12,
-        backgroundColor: selectionne ? (cA + '20') : c.chip,
-        alignItems: 'center', justifyContent: 'center',
+        width: largeur,
+        backgroundColor: selectionne ? (cA + '18') : c.carte,
+        borderWidth: selectionne ? 2 : 1.5,
+        borderColor: selectionne ? cA : c.bordure,
+        borderRadius: 14,
+        minHeight: 118,
       }}>
-        <Icone color={selectionne ? cA : c.sec} size={26} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={{ color: selectionne ? cA : c.texte, fontSize: 15, fontWeight: '700', marginBottom: 2 }}>
-          {titre}
-        </Text>
-        {description ? (
-          <Text style={{ color: c.sec, fontSize: 12, lineHeight: 17 }}>{description}</Text>
-        ) : null}
-      </View>
-      {selectionne && (
-        <View style={{
-          width: 22, height: 22, borderRadius: 11,
-          backgroundColor: cA, alignItems: 'center', justifyContent: 'center',
-        }}>
-          <Ionicons name="checkmark" size={13} color="#fff" />
+        {/* Badge sélection — flux normal, aligné à droite */}
+        <View style={{ alignItems: 'flex-end', paddingHorizontal: 8, paddingTop: 8 }}>
+          <View style={{
+            width: 22, height: 22, borderRadius: 11,
+            backgroundColor: selectionne ? cA : c.bordure,
+            alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Ionicons
+              name={selectionne ? 'checkmark' : 'remove'}
+              size={13}
+              color={selectionne ? '#fff' : c.sec}
+            />
+          </View>
         </View>
-      )}
+
+        {/* Icône + titre + description */}
+        <View style={{
+          paddingHorizontal: 12,
+          paddingBottom: 14,
+          alignItems: 'center',
+          gap: 7,
+        }}>
+          <View style={{
+            width: 46, height: 46, borderRadius: 13,
+            backgroundColor: selectionne ? (cA + '28') : c.chip,
+            alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Icone color={selectionne ? cA : c.sec} size={24} />
+          </View>
+          <Text style={{
+            color: selectionne ? cA : c.texte,
+            fontSize: 13, fontWeight: '700',
+            textAlign: 'center', lineHeight: 17,
+          }}>
+            {titre}
+          </Text>
+          {description ? (
+            <Text style={{ color: c.sec, fontSize: 10.5, lineHeight: 14, textAlign: 'center' }}>
+              {description}
+            </Text>
+          ) : null}
+        </View>
+      </View>
     </Pressable>
   )
+}
+
+// ─── Rangée 2 colonnes ────────────────────────────────────────────────────────
+// largeurDisponible est calculé depuis useWindowDimensions dans le parent —
+// valeur en pixels absolus pour garantir que la rangée ne déborde jamais.
+
+const Rangee = ({ children, derniere, largeurDisponible }) => (
+  <View style={{
+    flexDirection: 'row',
+    gap: CARD_GAP,
+    width: largeurDisponible,
+    marginBottom: derniere ? 0 : CARD_GAP,
+  }}>
+    {children}
+  </View>
+)
+
+const grouper2Col = (items) => {
+  const groupes = []
+  for (let i = 0; i < items.length; i += 2) groupes.push(items.slice(i, i + 2))
+  return groupes
 }
 
 // ─── Slides ───────────────────────────────────────────────────────────────────
 
 const SlideConsentement = ({ c, estSombre }) => (
-  <View style={{ alignItems: 'center', paddingTop: 16 }}>
+  <View>
     <View style={{
-      width: 80, height: 80, borderRadius: 24,
-      backgroundColor: estSombre ? '#1e3a5f' : '#dbeafe',
-      alignItems: 'center', justifyContent: 'center',
-      marginBottom: 24,
+      alignItems: 'center', paddingTop: 16, marginBottom: 0,
     }}>
-      <IcLock color={c.accent} size={44} />
-    </View>
+      <View style={{
+        width: 80, height: 80, borderRadius: 24,
+        backgroundColor: estSombre ? '#1e3a5f' : '#dbeafe',
+        alignItems: 'center', justifyContent: 'center',
+        marginBottom: 24,
+      }}>
+        <IcLock color={c.accent} size={44} />
+      </View>
 
-    <Text style={{ color: c.texte, fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 10 }}>
-      Tes données au service du bot
-    </Text>
-    <Text style={{ color: c.sec, fontSize: 14, lineHeight: 22, textAlign: 'center', marginBottom: 24 }}>
-      BetEdge apprend de tes paris pour détecter des opportunités similaires sur le marché.
-    </Text>
-
-    <View style={{
-      backgroundColor: c.carte, borderWidth: 1, borderColor: c.bordure,
-      borderRadius: 12, padding: 16, marginBottom: 14, width: '100%',
-    }}>
-      <Text style={{ color: c.texte, fontSize: 14, fontWeight: '700', marginBottom: 10 }}>
-        Ce que ça signifie concrètement
+      <Text style={{ color: c.texte, fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 10 }}>
+        Tes données au service du bot
       </Text>
-      {[
-        'Tes paris contribuent anonymement à enrichir le bot pour toute la communauté.',
-        'Aucune donnée personnelle identifiable n\'est partagée avec d\'autres utilisateurs.',
-        'Tu choisis si tu veux bénéficier des patterns communautaires ou uniquement des tiens.',
-      ].map((texte, i) => (
-        <View key={i} style={{ flexDirection: 'row', gap: 10, marginBottom: 6, alignItems: 'flex-start' }}>
-          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c.accent, marginTop: 7 }} />
-          <Text style={{ color: c.sec, fontSize: 13, lineHeight: 20, flex: 1 }}>{texte}</Text>
-        </View>
+      <Text style={{ color: c.sec, fontSize: 14, lineHeight: 22, textAlign: 'center', marginBottom: 24 }}>
+        BetEdge apprend de tes paris pour détecter des opportunités similaires sur le marché.
+      </Text>
+
+      <View style={{
+        backgroundColor: c.carte, borderWidth: 1, borderColor: c.bordure,
+        borderRadius: 12, padding: 16, marginBottom: 14, alignSelf: 'stretch',
+      }}>
+        <Text style={{ color: c.texte, fontSize: 14, fontWeight: '700', marginBottom: 10 }}>
+          Ce que ça signifie concrètement
+        </Text>
+        {[
+          'Tes paris contribuent anonymement à enrichir le bot pour toute la communauté.',
+          'Aucune donnée personnelle identifiable n\'est partagée avec d\'autres utilisateurs.',
+          'Tu choisis si tu veux bénéficier des patterns communautaires ou uniquement des tiens.',
+        ].map((texte, i) => (
+          <View key={i} style={{ flexDirection: 'row', gap: 10, marginBottom: 6, alignItems: 'flex-start' }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c.accent, marginTop: 7 }} />
+            <Text style={{ color: c.sec, fontSize: 13, lineHeight: 20, flex: 1 }}>{texte}</Text>
+          </View>
+        ))}
+      </View>
+
+      <View style={{
+        backgroundColor: estSombre ? '#0f2a1a' : '#f0fdf4',
+        borderWidth: 1, borderColor: '#22c55e40',
+        borderRadius: 10, padding: 12, alignSelf: 'stretch',
+      }}>
+        <Text style={{ color: '#22c55e', fontSize: 12, fontWeight: '600', textAlign: 'center', lineHeight: 18 }}>
+          En utilisant BetEdge, tu acceptes ce traitement des données conformément au RGPD.
+        </Text>
+      </View>
+    </View>
+  </View>
+)
+
+const SlideSports = ({ prefs, toggle, c, largeurCarte, largeurDisponible }) => {
+  const options = [
+    { valeur: 'football',   Icone: IcFootball,   titre: 'Football',    description: 'Ligue 1, EPL, UCL…' },
+    { valeur: 'tennis',     Icone: IcTennis,     titre: 'Tennis',      description: 'ATP, WTA, Chelems…' },
+    { valeur: 'basketball', Icone: IcBasketball, titre: 'Basketball',  description: 'NBA, Euroleague…' },
+    { valeur: 'rugby',      Icone: IcRugby,      titre: 'Rugby',       description: 'Top 14, 6 Nations…' },
+    { valeur: 'hockey',     Icone: IcHockey,     titre: 'Hockey',      description: 'NHL, Mondial…' },
+  ]
+  const rangees = grouper2Col(options)
+  return (
+    <View>
+      <Text style={{ color: c.texte, fontSize: 20, fontWeight: '800', marginBottom: 6 }}>Sports à surveiller</Text>
+      <Text style={{ color: c.sec, fontSize: 14, marginBottom: 20, lineHeight: 20 }}>
+        Le bot analysera uniquement les matchs de ces sports. Tu peux en sélectionner plusieurs.
+      </Text>
+      {rangees.map((rang, i) => (
+        <Rangee key={i} derniere={i === rangees.length - 1} largeurDisponible={largeurDisponible}>
+          {rang.map(({ valeur, Icone, titre, description }) => (
+            <CarteOption
+              key={valeur} Icone={Icone} titre={titre} description={description}
+              selectionne={prefs.sports.includes(valeur)}
+              onPress={() => toggle(valeur)}
+              c={c} largeur={largeurCarte}
+            />
+          ))}
+          {rang.length < 2 && <View style={{ width: largeurCarte }} />}
+        </Rangee>
       ))}
     </View>
+  )
+}
 
-    <View style={{
-      backgroundColor: estSombre ? '#0f2a1a' : '#f0fdf4',
-      borderWidth: 1, borderColor: '#22c55e40',
-      borderRadius: 10, padding: 12, width: '100%',
-    }}>
-      <Text style={{ color: '#22c55e', fontSize: 12, fontWeight: '600', textAlign: 'center', lineHeight: 18 }}>
-        En utilisant BetEdge, tu acceptes ce traitement des données conformément au RGPD.
+const SlideRisque = ({ prefs, setPrefs, c, largeurCarte, largeurDisponible }) => {
+  const options = [
+    { valeur: 'securite',    Icone: IcShield,  titre: 'Sécurité',          description: 'Cotes 1.10 – 1.80', couleur: '#22c55e' },
+    { valeur: 'equilibre',   Icone: IcBalance, titre: 'Équilibré',          description: 'Cotes 1.50 – 2.50', couleur: '#3b82f6' },
+    { valeur: 'risque',      Icone: IcRocket,  titre: 'Audacieux',          description: 'Cotes 2.00 – 4.00', couleur: '#f59e0b' },
+    { valeur: 'tres_risque', Icone: IcDiamond, titre: 'Chasseur de valeur', description: 'Cotes 3.00+',       couleur: '#a855f7' },
+  ]
+  const rangees = grouper2Col(options)
+  return (
+    <View>
+      <Text style={{ color: c.texte, fontSize: 20, fontWeight: '800', marginBottom: 6 }}>Profil de risque</Text>
+      <Text style={{ color: c.sec, fontSize: 14, marginBottom: 20, lineHeight: 20 }}>
+        Détermine la plage de cotes que le bot cible pour toi.
       </Text>
+      {rangees.map((rang, i) => (
+        <Rangee key={i} derniere={i === rangees.length - 1} largeurDisponible={largeurDisponible}>
+          {rang.map(({ valeur, Icone, titre, description, couleur }) => (
+            <CarteOption
+              key={valeur} Icone={Icone} titre={titre} description={description}
+              selectionne={prefs.profil_risque === valeur}
+              onPress={() => setPrefs(p => ({ ...p, profil_risque: valeur }))}
+              c={c} couleurActive={couleur} largeur={largeurCarte}
+            />
+          ))}
+          {rang.length < 2 && <View style={{ width: largeurCarte }} />}
+        </Rangee>
+      ))}
     </View>
-  </View>
-)
+  )
+}
 
-const SlideSports = ({ prefs, toggle, c }) => (
-  <View>
-    <Text style={{ color: c.texte, fontSize: 20, fontWeight: '800', marginBottom: 6 }}>Sports à surveiller</Text>
-    <Text style={{ color: c.sec, fontSize: 14, marginBottom: 20, lineHeight: 20 }}>
-      Le bot analysera uniquement les matchs de ces sports. Tu peux en sélectionner plusieurs.
-    </Text>
-    {[
-      { valeur: 'football',   Icone: IcFootball,   titre: 'Football',    description: 'Ligue 1, Premier League, Champions League…' },
-      { valeur: 'tennis',     Icone: IcTennis,     titre: 'Tennis',      description: 'ATP, WTA, Grands Chelems…' },
-      { valeur: 'basketball', Icone: IcBasketball, titre: 'Basketball',  description: 'NBA, Euroleague…' },
-      { valeur: 'rugby',      Icone: IcRugby,      titre: 'Rugby',       description: 'Top 14, 6 Nations, Champions Cup…' },
-      { valeur: 'hockey',     Icone: IcHockey,     titre: 'Hockey',      description: 'NHL, Championnat du Monde…' },
-    ].map(({ valeur, Icone, titre, description }) => (
-      <CarteOption
-        key={valeur}
-        Icone={Icone}
-        titre={titre}
-        description={description}
-        selectionne={prefs.sports.includes(valeur)}
-        onPress={() => toggle(valeur)}
-        c={c}
-      />
-    ))}
-  </View>
-)
+const SlideAnalyse = ({ prefs, toggle, c, largeurCarte, largeurDisponible }) => {
+  const options = [
+    { valeur: 'patterns',  Icone: IcGraph,     titre: 'Patterns gagnants', description: 'Matchs similaires à tes victoires passées' },
+    { valeur: 'anomalies', Icone: IcLightning, titre: 'Cotes anormales',   description: 'Bookmaker sous-évalué vs le marché' },
+  ]
+  return (
+    <View>
+      <Text style={{ color: c.texte, fontSize: 20, fontWeight: '800', marginBottom: 6 }}>Type d'analyse</Text>
+      <Text style={{ color: c.sec, fontSize: 14, marginBottom: 20, lineHeight: 20 }}>
+        Comment le bot détecte les opportunités. Tu peux activer les deux.
+      </Text>
+      <Rangee derniere largeurDisponible={largeurDisponible}>
+        {options.map(({ valeur, Icone, titre, description }) => (
+          <CarteOption
+            key={valeur} Icone={Icone} titre={titre} description={description}
+            selectionne={prefs.types_analyse.includes(valeur)}
+            onPress={() => toggle(valeur)}
+            c={c} largeur={largeurCarte}
+          />
+        ))}
+      </Rangee>
+    </View>
+  )
+}
 
-const SlideRisque = ({ prefs, setPrefs, c }) => (
-  <View>
-    <Text style={{ color: c.texte, fontSize: 20, fontWeight: '800', marginBottom: 6 }}>Profil de risque</Text>
-    <Text style={{ color: c.sec, fontSize: 14, marginBottom: 20, lineHeight: 20 }}>
-      Détermine la plage de cotes que le bot cible pour toi.
-    </Text>
-    {[
-      { valeur: 'securite',    Icone: IcShield,  titre: 'Sécurité',          description: 'Cotes 1.10 – 1.80 · Paris très probables, gains modestes', couleur: '#22c55e' },
-      { valeur: 'equilibre',   Icone: IcBalance, titre: 'Équilibré',          description: 'Cotes 1.50 – 2.50 · Bon compromis risque / gain', couleur: '#3b82f6' },
-      { valeur: 'risque',      Icone: IcRocket,  titre: 'Audacieux',          description: 'Cotes 2.00 – 4.00 · Paris risqués à fort potentiel', couleur: '#f59e0b' },
-      { valeur: 'tres_risque', Icone: IcDiamond, titre: 'Chasseur de valeur', description: 'Cotes 3.00+ · Gros coups ou anomalies de marché', couleur: '#a855f7' },
-    ].map(({ valeur, Icone, titre, description, couleur }) => (
-      <CarteOption
-        key={valeur}
-        Icone={Icone}
-        titre={titre}
-        description={description}
-        selectionne={prefs.profil_risque === valeur}
-        onPress={() => setPrefs(p => ({ ...p, profil_risque: valeur }))}
-        c={c}
-        couleurActive={couleur}
-      />
-    ))}
-  </View>
-)
+const SlideFormat = ({ prefs, setPrefs, c, largeurCarte, largeurDisponible }) => {
+  const options = [
+    { valeur: 'sec',      Icone: IcTarget, titre: 'Paris secs',     description: 'Une sélection · Précis et maîtrisé' },
+    { valeur: 'combine',  Icone: IcChain,  titre: 'Combinés',       description: 'Plusieurs sélections · Cote plus haute' },
+    { valeur: 'les_deux', Icone: IcStar,   titre: 'Les deux',       description: 'Selon l\'opportunité, sans restriction' },
+  ]
+  const rangees = grouper2Col(options)
+  return (
+    <View>
+      <Text style={{ color: c.texte, fontSize: 20, fontWeight: '800', marginBottom: 6 }}>Format de pari</Text>
+      <Text style={{ color: c.sec, fontSize: 14, marginBottom: 20, lineHeight: 20 }}>
+        Le bot adaptera ses suggestions à ton style préféré.
+      </Text>
+      {rangees.map((rang, i) => (
+        <Rangee key={i} derniere={i === rangees.length - 1} largeurDisponible={largeurDisponible}>
+          {rang.map(({ valeur, Icone, titre, description }) => (
+            <CarteOption
+              key={valeur} Icone={Icone} titre={titre} description={description}
+              selectionne={prefs.format_pari === valeur}
+              onPress={() => setPrefs(p => ({ ...p, format_pari: valeur }))}
+              c={c} largeur={largeurCarte}
+            />
+          ))}
+          {rang.length < 2 && <View style={{ width: largeurCarte }} />}
+        </Rangee>
+      ))}
+    </View>
+  )
+}
 
-const SlideAnalyse = ({ prefs, toggle, c }) => (
-  <View>
-    <Text style={{ color: c.texte, fontSize: 20, fontWeight: '800', marginBottom: 6 }}>Type d'analyse</Text>
-    <Text style={{ color: c.sec, fontSize: 14, marginBottom: 20, lineHeight: 20 }}>
-      Comment le bot détecte les opportunités. Tu peux activer les deux.
-    </Text>
-    {[
-      { valeur: 'patterns',  Icone: IcGraph,     titre: 'Mes patterns gagnants', description: 'Le bot compare les matchs à venir avec tes critères de victoires passées.' },
-      { valeur: 'anomalies', Icone: IcLightning, titre: 'Cotes anormales',       description: 'Le bot détecte quand un bookmaker propose une cote sous-évaluée par le marché.' },
-    ].map(({ valeur, Icone, titre, description }) => (
-      <CarteOption
-        key={valeur}
-        Icone={Icone}
-        titre={titre}
-        description={description}
-        selectionne={prefs.types_analyse.includes(valeur)}
-        onPress={() => toggle(valeur)}
-        c={c}
-      />
-    ))}
-  </View>
-)
-
-const SlideFormat = ({ prefs, setPrefs, c }) => (
-  <View>
-    <Text style={{ color: c.texte, fontSize: 20, fontWeight: '800', marginBottom: 6 }}>Format de pari</Text>
-    <Text style={{ color: c.sec, fontSize: 14, marginBottom: 20, lineHeight: 20 }}>
-      Le bot adaptera ses suggestions à ton style préféré.
-    </Text>
-    {[
-      { valeur: 'sec',      Icone: IcTarget, titre: 'Paris secs',     description: 'Une seule sélection par alerte · Précis et maîtrisé.' },
-      { valeur: 'combine',  Icone: IcChain,  titre: 'Paris combinés', description: 'Plusieurs sélections groupées · Cote globale plus élevée, risque accru.' },
-      { valeur: 'les_deux', Icone: IcStar,   titre: 'Les deux',       description: 'Le bot propose selon l\'opportunité, sans restriction de format.' },
-    ].map(({ valeur, Icone, titre, description }) => (
-      <CarteOption
-        key={valeur}
-        Icone={Icone}
-        titre={titre}
-        description={description}
-        selectionne={prefs.format_pari === valeur}
-        onPress={() => setPrefs(p => ({ ...p, format_pari: valeur }))}
-        c={c}
-      />
-    ))}
-  </View>
-)
-
-const SlideSource = ({ prefs, setPrefs, c, estSombre }) => (
-  <View>
-    <Text style={{ color: c.texte, fontSize: 20, fontWeight: '800', marginBottom: 6 }}>Base d'analyse</Text>
-    <Text style={{ color: c.sec, fontSize: 14, marginBottom: 20, lineHeight: 20 }}>
-      Sur quoi le bot se base-t-il pour générer TES alertes ?
-    </Text>
-    {[
-      {
-        valeur: 'perso',
-        Icone: IcPerson,
-        titre: 'Mes paris uniquement',
-        description: 'Le bot analyse exclusivement ton historique. Plus précis une fois que tu as accumulé des données.',
-        note: null,
-      },
-      {
-        valeur: 'communaute',
-        Icone: IcCommunity,
-        titre: 'Données de la communauté',
-        description: 'Le bot s\'appuie sur les patterns de toute la communauté BetEdge. Utile si tu débutes ou veux une vision plus large.',
-        note: 'Tes paris contribuent déjà au pool commun, quel que soit ton choix ici.',
-      },
-    ].map(({ valeur, Icone, titre, description, note }) => (
-      <View key={valeur}>
-        <CarteOption
-          Icone={Icone}
-          titre={titre}
-          description={description}
-          selectionne={prefs.source_donnees === valeur}
-          onPress={() => setPrefs(p => ({ ...p, source_donnees: valeur }))}
-          c={c}
-        />
-        {note && prefs.source_donnees === valeur && (
-          <View style={{
-            backgroundColor: estSombre ? '#1e3a5f' : '#eff6ff',
-            borderRadius: 8, padding: 10,
-            marginTop: -4, marginBottom: 10,
-          }}>
-            <Text style={{ color: c.sec, fontSize: 12, lineHeight: 18 }}>{note}</Text>
-          </View>
-        )}
-      </View>
-    ))}
-  </View>
-)
+const SlideSource = ({ prefs, setPrefs, c, estSombre, largeurCarte, largeurDisponible }) => {
+  const options = [
+    { valeur: 'perso',      Icone: IcPerson,    titre: 'Mes paris',   description: 'Mon historique uniquement' },
+    { valeur: 'communaute', Icone: IcCommunity, titre: 'Communauté',  description: 'Patterns de tous les utilisateurs' },
+  ]
+  return (
+    <View>
+      <Text style={{ color: c.texte, fontSize: 20, fontWeight: '800', marginBottom: 6 }}>Base d'analyse</Text>
+      <Text style={{ color: c.sec, fontSize: 14, marginBottom: 20, lineHeight: 20 }}>
+        Sur quoi le bot se base-t-il pour générer TES alertes ?
+      </Text>
+      <Rangee derniere={prefs.source_donnees !== 'communaute'} largeurDisponible={largeurDisponible}>
+        {options.map(({ valeur, Icone, titre, description }) => (
+          <CarteOption
+            key={valeur} Icone={Icone} titre={titre} description={description}
+            selectionne={prefs.source_donnees === valeur}
+            onPress={() => setPrefs(p => ({ ...p, source_donnees: valeur }))}
+            c={c} largeur={largeurCarte}
+          />
+        ))}
+      </Rangee>
+      {prefs.source_donnees === 'communaute' && (
+        <View style={{
+          marginTop: CARD_GAP,
+          backgroundColor: estSombre ? '#1e3a5f' : '#eff6ff',
+          borderRadius: 10, padding: 12,
+          borderWidth: 1, borderColor: '#3b82f620',
+        }}>
+          <Text style={{ color: c.sec, fontSize: 12, lineHeight: 18 }}>
+            Tes paris contribuent déjà au pool commun, quel que soit ton choix ici.
+          </Text>
+        </View>
+      )}
+    </View>
+  )
+}
 
 // ─── Composant principal ──────────────────────────────────────────────────────
 
@@ -411,9 +471,16 @@ const NB_QUESTIONS = 5
 
 export default function ModalePreferencesBot({ visible, onFermer, preferencesInitiales }) {
   const { estSombre } = useTheme()
+  const { width: largeurEcran } = useWindowDimensions()
   const [etape, setEtape] = useState(0)
   const [sauvegarde, setSauvegarde] = useState(false)
   const [prefs, setPrefs] = useState({ ...PREFS_DEFAUT })
+  // Mesure réelle du contenu via onLayout — plus fiable que useWindowDimensions dans un Modal
+  const [largeurContent, setLargeurContent] = useState(largeurEcran - PADDING_H * 2)
+  const largeurCarte = (largeurContent - CARD_GAP) / 2
+  const onLayoutContent = useCallback(({ nativeEvent }) => {
+    setLargeurContent(nativeEvent.layout.width)
+  }, [])
 
   const c = {
     fond:    estSombre ? '#0f172a' : '#f8fafc',
@@ -429,7 +496,7 @@ export default function ModalePreferencesBot({ visible, onFermer, preferencesIni
     if (!visible) return
     if (preferencesInitiales) {
       setPrefs({ ...PREFS_DEFAUT, ...preferencesInitiales })
-      setEtape(1) // skip consentement si déjà configuré
+      setEtape(1)
     } else {
       setPrefs({ ...PREFS_DEFAUT })
       setEtape(0)
@@ -477,6 +544,8 @@ export default function ModalePreferencesBot({ visible, onFermer, preferencesIni
 
   const progressionVisible = etape > 0
 
+  const propsSlide = { c, largeurCarte, largeurDisponible: largeurContent }
+
   return (
     <Modal visible={visible} animationType="slide" transparent={false}>
       <SafeAreaView style={{ flex: 1, backgroundColor: c.fond }}>
@@ -507,7 +576,7 @@ export default function ModalePreferencesBot({ visible, onFermer, preferencesIni
               <View
                 key={i}
                 style={{
-                  flex: 1, height: 3, borderRadius: 2,
+                  flex: 1, height: 4, borderRadius: 2,
                   backgroundColor: i < etape ? c.accent : c.chip,
                 }}
               />
@@ -516,13 +585,19 @@ export default function ModalePreferencesBot({ visible, onFermer, preferencesIni
         )}
 
         {/* ── Contenu de la slide ── */}
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 8 }}>
-          {etape === 0 && <SlideConsentement c={c} estSombre={estSombre} />}
-          {etape === 1 && <SlideSports prefs={prefs} toggle={toggleSport} c={c} />}
-          {etape === 2 && <SlideRisque prefs={prefs} setPrefs={setPrefs} c={c} />}
-          {etape === 3 && <SlideAnalyse prefs={prefs} toggle={toggleTypeAnalyse} c={c} />}
-          {etape === 4 && <SlideFormat prefs={prefs} setPrefs={setPrefs} c={c} />}
-          {etape === 5 && <SlideSource prefs={prefs} setPrefs={setPrefs} c={c} estSombre={estSombre} />}
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: PADDING_H, paddingBottom: 8 }}
+        >
+          {/* View de mesure — onLayout donne la largeur réelle disponible après padding */}
+          <View onLayout={onLayoutContent}>
+            {etape === 0 && <SlideConsentement c={c} estSombre={estSombre} />}
+            {etape === 1 && <SlideSports prefs={prefs} toggle={toggleSport} {...propsSlide} />}
+            {etape === 2 && <SlideRisque prefs={prefs} setPrefs={setPrefs} {...propsSlide} />}
+            {etape === 3 && <SlideAnalyse prefs={prefs} toggle={toggleTypeAnalyse} {...propsSlide} />}
+            {etape === 4 && <SlideFormat prefs={prefs} setPrefs={setPrefs} {...propsSlide} />}
+            {etape === 5 && <SlideSource prefs={prefs} setPrefs={setPrefs} estSombre={estSombre} {...propsSlide} />}
+          </View>
         </ScrollView>
 
         {/* ── Footer navigation ── */}
