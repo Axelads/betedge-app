@@ -1,7 +1,7 @@
 # Feedback BetEdge — Thomas
 
 > Synchronisé automatiquement depuis Google Doc.
-> Dernière mise à jour : 2026-04-30 21:34
+> Dernière mise à jour : 2026-04-30 22:34
 
 ---
 
