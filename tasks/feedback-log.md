@@ -2,6 +2,17 @@
 
 ---
 
+## Traité le 2026-05-02
+
+### Idées de cartes FUT à débloquer et système de niveaux de compte
+
+- **Retour original :** "trouve des idées pour les cartes fut a gagner pour le user s'il te plait , possibilité de faire comme par niveau de compte"
+- **Correction appliquée :** Ajout de 9 nouveaux types de cartes FUT débloquables dans `TYPES_CARTES`, organisés en deux catégories : (1) **Niveaux de compte** — 5 cartes jalonnant la progression de l'utilisateur en fonction de son nombre total de paris : Recrue BetEdge (1 pari, bronze), Parieur (20 paris, bronze), Cap des 50 (50 paris, argent), Maître des Paris (200 paris, or), Légende BetEdge (500 paris, or) — qui s'articulent avec la carte Centurion existante (100 paris, or) pour former une progression à 6 paliers. (2) **Performance spéciale** — 4 cartes basées sur des exploits : Bankroll au Vert (1er mois calendaire avec profit > 0, bronze), Polyvalent (victoires sur ≥5 sports différents, argent), Gros Coup (victoire à cote ≥ 5.0, or), Invaincu (10 victoires consécutives, argent, 1 max/semaine). Ajout également de `NIVEAUX_COMPTE` (tableau exporté des 6 paliers avec leur seuil, couleur et typeCarte) et de `calculerNiveauCompte(nbParis)` (retourne `{ niveauActuel, niveauSuivant, progression, nbParis }`) pour permettre l'affichage de la progression dans l'UI. La logique d'évaluation est intégrée dans `evaluerNouvellesCartes`.
+- **Fichiers modifiés :**
+  - `src/services/cartesFut.js` — 9 nouveaux types dans `TYPES_CARTES`, export `NIVEAUX_COMPTE`, export `calculerNiveauCompte`, 9 nouveaux blocs d'évaluation dans `evaluerNouvellesCartes`
+
+---
+
 ## Traité le 2026-04-28
 
 ### Carte FUT personnalisable dans les paramètres

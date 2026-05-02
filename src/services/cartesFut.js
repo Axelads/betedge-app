@@ -21,6 +21,42 @@ export const TYPES_CARTES = {
   explorateur:  { couleur: 'bronze', titre: 'Explorateur Sportif',emoji: '🌍' },
   regulier:     { couleur: 'bronze', titre: 'Parieur Régulier',   emoji: '📅' },
   dix_paris:    { couleur: 'bronze', titre: 'Dix Paris !',        emoji: '🏆' },
+  // ── Niveaux de compte ──
+  recrue:           { couleur: 'bronze', titre: 'Recrue BetEdge',   emoji: '🎽' },
+  parieur_20:       { couleur: 'bronze', titre: 'Parieur',          emoji: '🃏' },
+  cinquante_paris:  { couleur: 'argent', titre: 'Cap des 50',       emoji: '🏅' },
+  maitre_paris:     { couleur: 'or',     titre: 'Maître des Paris', emoji: '👑' },
+  legende:          { couleur: 'or',     titre: 'Légende BetEdge',  emoji: '🌟' },
+  // ── Performance spéciale ──
+  bankroll_positive:{ couleur: 'bronze', titre: 'Bankroll au Vert', emoji: '📗' },
+  multisport:       { couleur: 'argent', titre: 'Polyvalent',       emoji: '🏟️' },
+  gros_coup:        { couleur: 'or',     titre: 'Gros Coup',        emoji: '💥' },
+  invaincu_dix:     { couleur: 'argent', titre: 'Invaincu',         emoji: '🛡️' },
+}
+
+// ─── Niveaux de compte ───────────────────────────────────────────────────────
+
+export const NIVEAUX_COMPTE = [
+  { niveau: 1, label: 'Recrue',    seuil: 1,   couleur: 'bronze', typeCarte: 'recrue' },
+  { niveau: 2, label: 'Parieur',   seuil: 20,  couleur: 'bronze', typeCarte: 'parieur_20' },
+  { niveau: 3, label: 'Initié',    seuil: 50,  couleur: 'argent', typeCarte: 'cinquante_paris' },
+  { niveau: 4, label: 'Centurion', seuil: 100, couleur: 'or',     typeCarte: 'centurion' },
+  { niveau: 5, label: 'Maître',    seuil: 200, couleur: 'or',     typeCarte: 'maitre_paris' },
+  { niveau: 6, label: 'Légende',   seuil: 500, couleur: 'or',     typeCarte: 'legende' },
+]
+
+export const calculerNiveauCompte = (nbParis) => {
+  let niveauActuel = NIVEAUX_COMPTE[0]
+  for (const niv of NIVEAUX_COMPTE) {
+    if (nbParis >= niv.seuil) niveauActuel = niv
+    else break
+  }
+  const indexActuel = NIVEAUX_COMPTE.indexOf(niveauActuel)
+  const niveauSuivant = NIVEAUX_COMPTE[indexActuel + 1] ?? null
+  const progression = niveauSuivant
+    ? Math.min(1, (nbParis - niveauActuel.seuil) / (niveauSuivant.seuil - niveauActuel.seuil))
+    : 1
+  return { niveauActuel, niveauSuivant, progression, nbParis }
 }
 
 // ─── Helpers de période ───────────────────────────────────────────────────────
@@ -292,6 +328,125 @@ export const evaluerNouvellesCartes = (allParis, cartesExistantes) => {
       raison: `${allParis.length} paris enregistrés — tu es un centurion !`,
       statistiques: construireStats(allParis),
       note: 95,
+    })
+  }
+
+  // ── Niveau 1 — Recrue (1er pari enregistré, unique) ───────────────────────────
+  if (allParis.length >= 1 && !aCarte(cartesExistantes, 'recrue')) {
+    nouvelles.push({
+      type: 'recrue',
+      raison: `Premier pari enregistré — bienvenue dans l'arène !`,
+      statistiques: construireStats(allParis),
+      note: 60,
+    })
+  }
+
+  // ── Niveau 2 — Parieur (20 paris total, unique) ───────────────────────────────
+  if (allParis.length >= 20 && !aCarte(cartesExistantes, 'parieur_20')) {
+    nouvelles.push({
+      type: 'parieur_20',
+      raison: `${allParis.length} paris — tu prends tes marques !`,
+      statistiques: construireStats(allParis),
+      note: 68,
+    })
+  }
+
+  // ── Niveau 3 — Initié (50 paris total, unique) ────────────────────────────────
+  if (allParis.length >= 50 && !aCarte(cartesExistantes, 'cinquante_paris')) {
+    nouvelles.push({
+      type: 'cinquante_paris',
+      raison: `Cap des 50 paris — l'expérience commence à parler !`,
+      statistiques: construireStats(allParis),
+      note: 78,
+    })
+  }
+
+  // ── Niveau 5 — Maître (200 paris total, unique) ───────────────────────────────
+  if (allParis.length >= 200 && !aCarte(cartesExistantes, 'maitre_paris')) {
+    nouvelles.push({
+      type: 'maitre_paris',
+      raison: `${allParis.length} paris — tu domines le jeu !`,
+      statistiques: construireStats(allParis),
+      note: 97,
+    })
+  }
+
+  // ── Niveau 6 — Légende (500 paris total, unique) ──────────────────────────────
+  if (allParis.length >= 500 && !aCarte(cartesExistantes, 'legende')) {
+    nouvelles.push({
+      type: 'legende',
+      raison: `${allParis.length} paris — une légende est née !`,
+      statistiques: construireStats(allParis),
+      note: 99,
+    })
+  }
+
+  // ── Bankroll au Vert (1er mois rentable, unique) ──────────────────────────────
+  if (!aCarte(cartesExistantes, 'bankroll_positive')) {
+    const terminesAll = allParis.filter(p => p.statut === 'gagne' || p.statut === 'perdu')
+    const profitParMois = {}
+    for (const p of terminesAll) {
+      const cleP = String(p.date_match || p.created).substring(0, 7)
+      if (!profitParMois[cleP]) profitParMois[cleP] = 0
+      profitParMois[cleP] += (p.profit_perte || 0)
+    }
+    const entreePositive = Object.entries(profitParMois).find(([, v]) => v > 0)
+    if (entreePositive) {
+      const [moisPositif, profitMois] = entreePositive
+      nouvelles.push({
+        type: 'bankroll_positive',
+        raison: `Premier mois rentable (${moisPositif}) : +${Math.round(profitMois)}€ !`,
+        statistiques: construireStats(
+          terminesAll.filter(p => String(p.date_match || p.created).startsWith(moisPositif))
+        ),
+        note: 67,
+      })
+    }
+  }
+
+  // ── Polyvalent (victoires sur ≥5 sports différents, unique) ──────────────────
+  if (!aCarte(cartesExistantes, 'multisport')) {
+    const sportsGagnes = new Set(
+      gagnes.map(p => p.sport?.split(',')[0]?.trim()).filter(Boolean)
+    )
+    if (sportsGagnes.size >= 5) {
+      nouvelles.push({
+        type: 'multisport',
+        raison: `Victoires sur ${sportsGagnes.size} sports différents — quel polyvalent !`,
+        statistiques: construireStats(allParis),
+        note: 79,
+      })
+    }
+  }
+
+  // ── Gros Coup (victoire à cote ≥ 5.0, unique) ────────────────────────────────
+  if (!aCarte(cartesExistantes, 'gros_coup')) {
+    const grosCoup = gagnes.find(p => (p.cote ?? 0) >= 5.0)
+    if (grosCoup) {
+      nouvelles.push({
+        type: 'gros_coup',
+        raison: `Victoire à la cote ${grosCoup.cote} — quel coup de maître !`,
+        statistiques: {
+          roi:         parseFloat(((grosCoup.cote - 1) * 100).toFixed(1)),
+          winRate:     100,
+          serie:       1,
+          coteMoyenne: grosCoup.cote,
+          profit:      parseFloat((grosCoup.profit_perte || 0).toFixed(2)),
+          nbParis:     1,
+        },
+        note: 92,
+      })
+    }
+  }
+
+  // ── Invaincu (10 victoires consécutives, 1 max/semaine) ───────────────────────
+  if (serie >= 10 && !aCarte(cartesExistantes, 'invaincu_dix', lundi)) {
+    nouvelles.push({
+      type: 'invaincu_dix',
+      raison: `${serie} victoires d'affilée — tu es inarrêtable !`,
+      statistiques: { ...construireStats(allParis), serie },
+      note: Math.min(96, 86 + (serie - 10)),
+      periode: lundi,
     })
   }
 
