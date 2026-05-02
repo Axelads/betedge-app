@@ -511,3 +511,31 @@ export const marquerCarteVue = async (id) => {
     console.error('marquerCarteVue erreur:', error)
   }
 }
+
+// Supprime les doublons : garde le plus récent par combinaison type+période
+export const nettoyerCartesDupliquees = async () => {
+  try {
+    const userId = pb.authStore.record?.id
+    if (!userId) return
+    const toutes = await pb.collection('cartes_fut').getFullList({
+      filter: `user = "${userId}"`,
+      sort: '-created',
+    })
+    const vues = new Map()
+    const aSupprimer = []
+    for (const c of toutes) {
+      const cle = `${c.type}_${c.periode ?? ''}`
+      if (vues.has(cle)) {
+        aSupprimer.push(c.id)
+      } else {
+        vues.set(cle, c.id)
+      }
+    }
+    if (aSupprimer.length > 0) {
+      await Promise.all(aSupprimer.map(id => pb.collection('cartes_fut').delete(id)))
+      console.log(`nettoyerCartesDupliquees: ${aSupprimer.length} doublon(s) supprimé(s)`)
+    }
+  } catch (error) {
+    console.error('nettoyerCartesDupliquees erreur:', error)
+  }
+}

@@ -24,9 +24,9 @@ import ParametresEcran from './src/screens/ParametresScreen'
 import AdminScreen from './src/screens/AdminScreen'
 import ModaleOnboarding from './src/components/ModaleOnboarding'
 import MopalePalmares from './src/components/MopalePalmares'
-import { pb, ID_SUPERUSER, getParisPlateformePeriode, getNbAlertesUtilisateurPeriode, getTousLesParis, getUrlAvatar } from './src/services/pocketbase'
+import { pb, ID_SUPERUSER, getParisPlateformePeriode, getNbAlertesUtilisateurPeriode, getTousLesParis, getMesParisPropres, getUrlAvatar } from './src/services/pocketbase'
 import { calculerROI, calculerTauxReussite } from './src/services/stats'
-import { evaluerNouvellesCartes, getCartesUtilisateur, getCartesNonVues, sauvegarderCarte } from './src/services/cartesFut'
+import { evaluerNouvellesCartes, getCartesUtilisateur, getCartesNonVues, sauvegarderCarte, nettoyerCartesDupliquees } from './src/services/cartesFut'
 import ModaleCarteFUT from './src/components/ModaleCarteFUT'
 
 const Tab = createBottomTabNavigator()
@@ -77,6 +77,8 @@ const trouverMeilleurParieur = (groupes) => {
   let meilleur = null
   let meilleurROI = -Infinity
   for (const { user, paris } of groupes) {
+    // L'admin est exclu du classement : ses données sont agrégées, pas représentatives
+    if (user.id === ID_SUPERUSER) continue
     const termines = paris.filter(p => p.statut === 'gagne' || p.statut === 'perdu')
     if (termines.length === 0) continue
     const roi = calculerROI(termines)
@@ -310,13 +312,18 @@ function AppNavigateur() {
 
   const verifierCartesFut = async () => {
     try {
-      const [allParis, cartesExistantes] = await Promise.all([
-        getTousLesParis(),
+      // Nettoyer d'abord les éventuels doublons existants en base
+      await nettoyerCartesDupliquees()
+
+      // getMesParisPropres : toujours filtrés par le user connecté, même pour l'admin
+      // (l'admin ne doit pas gagner des cartes basées sur les paris d'autres utilisateurs)
+      const [mesParis, cartesExistantes] = await Promise.all([
+        getMesParisPropres(),
         getCartesUtilisateur(),
       ])
 
-      // Évaluer les nouvelles cartes méritées
-      const nouvelles = evaluerNouvellesCartes(allParis, cartesExistantes)
+      // Évaluer les nouvelles cartes méritées sur SES propres paris uniquement
+      const nouvelles = evaluerNouvellesCartes(mesParis, cartesExistantes)
 
       // Sauvegarder les nouvelles cartes en parallèle
       if (nouvelles.length > 0) {

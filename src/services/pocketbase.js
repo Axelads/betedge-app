@@ -71,6 +71,23 @@ export const getTousLesParis = async () => {
   }
 }
 
+// Toujours filtrés par l'utilisateur connecté — jamais l'exception admin
+// Utilisé pour l'évaluation des cartes FUT (on évalue uniquement ses propres paris)
+export const getMesParisPropres = async () => {
+  try {
+    const userId = pb.authStore.record?.id
+    if (!userId) return []
+    return await pb.collection('paris').getFullList({
+      sort: '-date_match,-created',
+      requestKey: null,
+      filter: `user = "${userId}"`,
+    })
+  } catch (error) {
+    console.error('getMesParisPropres erreur:', error)
+    return []
+  }
+}
+
 export const getParisEnAttente = async () => {
   try {
     const userId = pb.authStore.record?.id

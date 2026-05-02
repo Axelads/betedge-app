@@ -87,7 +87,7 @@ export default function ParametresScreen() {
   // Trophées FUT
   const [cartes, setCartes] = useState([])
   const [chargementCartes, setChargementCartes] = useState(false)
-  const [montrerDemo, setMontrerDemo] = useState(false)
+  const [montrerApercu, setMontrerApercu] = useState(false)
   const [montrerCartePerso, setMontrerCartePerso] = useState(false)
 
   const c = {
@@ -569,9 +569,9 @@ export default function ParametresScreen() {
                 </Text>
               </View>
             )}
-            {/* Bouton démo */}
+            {/* Bouton aperçu — vraies cartes si disponibles, démo sinon */}
             <Pressable
-              onPress={() => setMontrerDemo(true)}
+              onPress={() => setMontrerApercu(true)}
               style={[
                 {
                   flexDirection: 'row', alignItems: 'center', gap: 4,
@@ -583,7 +583,7 @@ export default function ParametresScreen() {
             >
               <Text style={{ fontSize: 11 }}>✨</Text>
               <Text style={{ color: estSombre ? '#c4b5fd' : '#6d28d9', fontSize: 11, fontWeight: '700' }}>
-                Aperçu
+                {cartes.length > 0 ? 'Rejouer' : 'Aperçu'}
               </Text>
             </Pressable>
           </View>
@@ -709,12 +709,12 @@ export default function ParametresScreen() {
       }}
     />
 
-    {/* ── Modale démo cartes FUT ── */}
+    {/* ── Modale aperçu cartes FUT : vraies cartes si disponibles, démo sinon ── */}
     <ModaleCarteFUT
-      visible={montrerDemo}
-      cartes={CARTES_DEMO}
+      visible={montrerApercu}
+      cartes={cartes.length > 0 ? cartes : CARTES_DEMO}
       avatarUrl={avatarUri}
-      onFermer={() => setMontrerDemo(false)}
+      onFermer={() => setMontrerApercu(false)}
     />
     <CartePersoScreen
       visible={montrerCartePerso}

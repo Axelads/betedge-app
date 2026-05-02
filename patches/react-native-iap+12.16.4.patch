@@ -15,3 +15,71 @@ index 79784fd..fdf87ae 100644
      s.dependency "RCTRequired"
      s.dependency "RCTTypeSafety"
      s.dependency "ReactCommon/turbomodule/core"
+diff --git a/node_modules/react-native-iap/android/build.gradle b/node_modules/react-native-iap/android/build.gradle
+index e4a79cc..db004c3 100644
+--- a/node_modules/react-native-iap/android/build.gradle
++++ b/node_modules/react-native-iap/android/build.gradle
+@@ -39,7 +39,7 @@ android {
+     minSdkVersion getExtOrIntegerDefault("minSdkVersion")
+     targetSdkVersion getExtOrIntegerDefault("targetSdkVersion")
+     buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString()
+-    buildConfigField "boolean", "IS_AMAZON_DRM_ENABLED", getExtOrDefault("isAmazonDrmEnabled")
++    buildConfigField "boolean", "IS_AMAZON_DRM_ENABLED", "false"
+   }
+ 
+   buildTypes {
+@@ -58,15 +58,11 @@ android {
+     targetCompatibility JavaVersion.VERSION_1_8
+   }
+ 
+-  flavorDimensions "store"
+-
+-  productFlavors {
+-    amazon {
+-      dimension "store"
+-    }
+-
+-    play {
+-      dimension "store"
++  // Flavors supprimés : Gradle 9 ne peut pas résoudre l'ambiguïté amazon/play côté consumer.
++  // Le code Play est inclus via sourceSets.main directement.
++  sourceSets {
++    main {
++      java.srcDirs += ['src/play/java']
+     }
+   }
+ 
+@@ -154,7 +150,6 @@ def supportLibVersion = getExtOrDefault("supportLibVersion")
+ def androidXVersion = getExtOrDefault("androidXVersion")
+ def androidXAnnotation = getExtOrDefault("androidXAnnotation")
+ def androidXBrowser = getExtOrDefault("androidXBrowser")
+-def amazonSdkVersion = getExtOrDefault("amazonSdkVersion")
+ def playBillingSdkVersion = getExtOrDefault("playBillingSdkVersion")
+ 
+ dependencies {
+@@ -164,10 +159,8 @@ dependencies {
+   testImplementation "junit:junit:4.13.2"
+   testImplementation "io.mockk:mockk:1.13.5"
+ 
+-  playImplementation "com.android.billingclient:billing-ktx:$playBillingSdkVersion"
+-  playImplementation "com.google.android.gms:play-services-base:$playServicesVersion"
+-
+-  amazonImplementation  "com.amazon.device:amazon-appstore-sdk:$amazonSdkVersion"
++  implementation "com.android.billingclient:billing-ktx:$playBillingSdkVersion"
++  implementation "com.google.android.gms:play-services-base:$playServicesVersion"
+ 
+   if (supportLibVersion && androidXVersion == null) {
+     implementation "com.android.support:support-annotations:$supportLibVersion"
+diff --git a/node_modules/react-native-iap/android/src/play/java/com/dooboolab/rniap/RNIapModule.kt b/node_modules/react-native-iap/android/src/play/java/com/dooboolab/rniap/RNIapModule.kt
+index 54ca696..3231f5b 100644
+--- a/node_modules/react-native-iap/android/src/play/java/com/dooboolab/rniap/RNIapModule.kt
++++ b/node_modules/react-native-iap/android/src/play/java/com/dooboolab/rniap/RNIapModule.kt
+@@ -461,7 +461,7 @@ class RNIapModule(
+         isOfferPersonalized: Boolean, // New parameter in V5
+         promise: Promise,
+     ) {
+-        val activity = currentActivity
++        val activity = reactContext.currentActivity
+         if (activity == null) {
+             promise.safeReject(PromiseUtils.E_UNKNOWN, "getCurrentActivity returned null")
+             return
