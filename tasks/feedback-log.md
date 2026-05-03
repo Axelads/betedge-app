@@ -2,6 +2,18 @@
 
 ---
 
+## Traité le 2026-05-03
+
+### Page galerie de toutes les cartes débloquables
+
+- **Retour original :** "créer une page pour voir toutes les cartes deblocables , les griser quand elle ne sont pas gagner au click sur la carte grisé on peut voir comment la gagner"
+- **Correction appliquée :** Nouvel écran Modal `CartesDebloquablesScreen` ouvert depuis un bouton "Voir toutes les cartes débloquables" ajouté dans la section "Mes Trophées" de ParametresScreen. L'écran affiche les 23 types de cartes définies dans `TYPES_CARTES`, triées par rareté (Or, Argent, Bronze). Les cartes déjà gagnées apparaissent normalement avec shimmer et un badge vert (checkmark). Les cartes non encore gagnées sont affichées avec la carte FUT grisée (overlay sombre semi-transparent + icône cadenas). Un clic sur une carte verrouillée ouvre une modale secondaire indiquant le titre, la rareté et la condition exacte de déblocage. En-tête de l'écran : compteur "X / 23 débloquées". Légende couleurs avec score par rareté (ex: 2/5 Or).
+- **Fichiers modifiés :**
+  - `src/screens/CartesDebloquablesScreen.jsx` — nouvel écran (Modal pageSheet) avec grille des 23 cartes, overlay verrouillage, badge checkmark, modale de condition
+  - `src/screens/ParametresScreen.jsx` — import CartesDebloquablesScreen, état montrerCartesDebloquables, bouton "Voir toutes les cartes débloquables", rendu CartesDebloquablesScreen
+
+---
+
 ## Traité le 2026-05-02
 
 ### Idées de cartes FUT à débloquer et système de niveaux de compte

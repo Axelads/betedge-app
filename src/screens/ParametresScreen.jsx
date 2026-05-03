@@ -15,6 +15,7 @@ import { getCartesUtilisateur, TYPES_CARTES } from '../services/cartesFut'
 import CarteFUT from '../components/CarteFUT'
 import ModaleCarteFUT from '../components/ModaleCarteFUT'
 import CartePersoScreen from './CartePersoScreen'
+import CartesDebloquablesScreen from './CartesDebloquablesScreen'
 
 // ─── Cartes de démonstration (aperçu visuel sans paris réels) ────────────────
 
@@ -89,6 +90,7 @@ export default function ParametresScreen() {
   const [chargementCartes, setChargementCartes] = useState(false)
   const [montrerApercu, setMontrerApercu] = useState(false)
   const [montrerCartePerso, setMontrerCartePerso] = useState(false)
+  const [montrerCartesDebloquables, setMontrerCartesDebloquables] = useState(false)
 
   const c = {
     fond:      estSombre ? '#0f172a' : '#f8fafc',
@@ -589,6 +591,23 @@ export default function ParametresScreen() {
           </View>
         </View>
 
+        {/* Bouton vers la galerie complète */}
+        <Pressable
+          onPress={() => setMontrerCartesDebloquables(true)}
+          style={({ pressed }) => ({
+            flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+            backgroundColor: estSombre ? '#1e293b' : '#f1f5f9',
+            borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10,
+            marginBottom: 14,
+            opacity: pressed ? 0.7 : 1,
+          })}
+        >
+          <Text style={{ color: c.texte, fontSize: 13, fontWeight: '600' }}>
+            Voir toutes les cartes débloquables
+          </Text>
+          <Ionicons name="grid-outline" size={16} color={c.sec} />
+        </Pressable>
+
         {chargementCartes ? (
           <View style={{ alignItems: 'center', paddingVertical: 30 }}>
             <ActivityIndicator color={c.accent} />
@@ -719,6 +738,11 @@ export default function ParametresScreen() {
     <CartePersoScreen
       visible={montrerCartePerso}
       onFermer={() => setMontrerCartePerso(false)}
+      avatarUrl={avatarUri}
+    />
+    <CartesDebloquablesScreen
+      visible={montrerCartesDebloquables}
+      onFermer={() => setMontrerCartesDebloquables(false)}
       avatarUrl={avatarUri}
     />
     </>
